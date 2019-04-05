@@ -9,12 +9,7 @@ CUDA_DEVICE_NAME="cuda:1"
 C_DIM=3
 SELECTED_ATTRS=("Blond_Hair" "Male" "Young")
 
-# It seems that "$EXP_ROOT_DIR/samples" is not working
-# because the output folder is still "stargan/samples"
-# which is the default value
-
-
-python main.py 
+python main.py \
 --mode train \
 --dataset $DATASET \
 --image_size $IMAGE_SIZE \
