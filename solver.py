@@ -51,6 +51,7 @@ class Solver(object):
         # Miscellaneous.
         self.use_tensorboard = config.use_tensorboard
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        print("Init solver on device {}".format(self.device))
 
         # Directories.
         self.log_dir = config.log_dir
