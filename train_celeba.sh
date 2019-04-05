@@ -1,10 +1,10 @@
-#!bin/bash
+#!/bin/bash
 
 DATASET="CelebA"
 IMAGE_SIZE=64
 EXP_ROOT_DIR="stargan_celeba_1"
 
-CUDA_DEVICE_NAME='cuda:1'
+CUDA_DEVICE_NAME="cuda:1"
 
 C_DIM=3
 SELECTED_ATTRS=("Blond_Hair" "Male" "Young")

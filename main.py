@@ -21,6 +21,13 @@ def main(config):
         os.makedirs(config.sample_dir)
     if not os.path.exists(config.result_dir):
         os.makedirs(config.result_dir)
+    if not os.path.exists(config.config_dir):
+        os.makedirs(config.config_dir)
+    
+    # Save configs to file
+    with open(config.config_dir + '/configs.txt', 'w') as file:
+        for arg in vars(config):
+            file.write("{}: {}\n".format(arg, getattr(config, arg)))
 
     # Data loader.
     celeba_loader = None
