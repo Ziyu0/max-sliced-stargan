@@ -99,6 +99,7 @@ if __name__ == '__main__':
     parser.add_argument('--model_save_dir', type=str, default='stargan/models')
     parser.add_argument('--sample_dir', type=str, default='stargan/samples')
     parser.add_argument('--result_dir', type=str, default='stargan/results')
+    parser.add_argument('--config_dir', type=str, default='stargan/configs')
 
     # Step size.
     parser.add_argument('--log_step', type=int, default=10)
