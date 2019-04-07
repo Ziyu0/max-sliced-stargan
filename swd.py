@@ -8,8 +8,10 @@ def sliced_wasserstein_distance(true_samples, fake_samples, num_projections):
     generated samples.
 
     Args:
-        true_samples: Samples from the real dataset, shape (N, C, H, W)
-        fake_samples: Samples from the generator, shape (N, C, H, W)
+        true_samples: Samples from the real dataset, shape (N, num_features)
+            Need to reshape images of (N, C, H, W) to (N, num_features) beforehand
+        fake_samples: Samples from the generator, shape (N, num_features)
+        num_projections(int)
     Returns:
         Sliced Wasserstein Distance, a scalar
     """

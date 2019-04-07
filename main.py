@@ -23,6 +23,8 @@ def main(config):
         os.makedirs(config.result_dir)
     if not os.path.exists(config.config_dir):
         os.makedirs(config.config_dir)
+    if not os.path.exists(config.progress_dir):
+        os.makedirs(config.progress_dir)
     
     # Save configs to file
     with open(config.config_dir + '/configs.txt', 'w') as file:
@@ -48,7 +50,12 @@ def main(config):
 
     if config.mode == 'train':
         if config.dataset in ['CelebA', 'RaFD']:
-            solver.train()
+            if config.use_sw_loss:
+                # Currently only training on single dataset supports sw loss
+                # TODO: enable sw loss for 'Both' dataset
+                solver.train_sw_loss()
+            else:
+                solver.train()
         elif config.dataset in ['Both']:
             solver.train_multi()
     elif config.mode == 'test':
@@ -56,8 +63,6 @@ def main(config):
             solver.test()
         elif config.dataset in ['Both']:
             solver.test_multi()
-    
-    # TODO: add train/test function selection for sw loss
 
 
 if __name__ == '__main__':
@@ -93,7 +98,7 @@ if __name__ == '__main__':
 
     # Training configuration for sliced wasserstein loss.
     # TODO: add config to choose the train_sw_loss() training method
-    parser.add_argument('--use_sw_loss', type=str2bool, default=True, help='train using sliced wasserstein loss')
+    parser.add_argument('--use_sw_loss', type=str2bool, default=False, help='train using sliced wasserstein loss')
     parser.add_argument('--num_projections', type=int, default=10000, help='num of projections used to compute the swd')
 
     # Test configuration.
@@ -113,7 +118,8 @@ if __name__ == '__main__':
     parser.add_argument('--model_save_dir', type=str, default='stargan/models')
     parser.add_argument('--sample_dir', type=str, default='stargan/samples')
     parser.add_argument('--result_dir', type=str, default='stargan/results')
-    parser.add_argument('--config_dir', type=str, default='stargan/configs')
+    parser.add_argument('--config_dir', type=str, default='stargan/configs', help="save the configs to file")
+    parser.add_argument('--progress_dir', type=str, default='stargan/progress', help="record the training info")
 
     # Step size.
     parser.add_argument('--log_step', type=int, default=10)

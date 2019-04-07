@@ -7,11 +7,12 @@ C_DIM=3
 SELECTED_ATTRS=("Blond_Hair" "Male" "Young")
 CUDA_DEVICE_NAME="cuda:1"
 
-EXP_ROOT_DIR="stargan_celeba_1"
-USE_SW_LOSS=False
-BATCH_SIZE=16
-NUM_ITERS=200000
-NUM_ITERS_DECAY=100000
+EXP_ROOT_DIR="stargan_celeba_sw_1"
+USE_SW_LOSS=True
+BATCH_SIZE=128
+NUM_ITERS=10000
+NUM_ITERS_DECAY=5000
+NUM_PROJECTIONS=10000
 
 
 # Train
@@ -32,4 +33,5 @@ python main.py \
 --use_sw_loss $USE_SW_LOSS \
 --batch_size $BATCH_SIZE \
 --num_iters $NUM_ITERS \
---num_iters_decay $NUM_ITERS_DECAY
+--num_iters_decay $NUM_ITERS_DECAY \
+--num_projections $NUM_PROJECTIONS
