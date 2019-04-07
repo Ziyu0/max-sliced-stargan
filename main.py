@@ -56,6 +56,8 @@ def main(config):
             solver.test()
         elif config.dataset in ['Both']:
             solver.test_multi()
+    
+    # TODO: add train/test function selection for sw loss
 
 
 if __name__ == '__main__':
@@ -88,6 +90,11 @@ if __name__ == '__main__':
     parser.add_argument('--resume_iters', type=int, default=None, help='resume training from this step')
     parser.add_argument('--selected_attrs', '--list', nargs='+', help='selected attributes for the CelebA dataset',
                         default=['Black_Hair', 'Blond_Hair', 'Brown_Hair', 'Male', 'Young'])
+
+    # Training configuration for sliced wasserstein loss.
+    # TODO: add config to choose the train_sw_loss() training method
+    parser.add_argument('--use_sw_loss', type=str2bool, default=True, help='train using sliced wasserstein loss')
+    parser.add_argument('--num_projections', type=int, default=10000, help='num of projections used to compute the swd')
 
     # Test configuration.
     parser.add_argument('--test_iters', type=int, default=200000, help='test model from this step')

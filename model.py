@@ -83,4 +83,6 @@ class Discriminator(nn.Module):
         h = self.main(x)
         out_src = self.conv1(h)
         out_cls = self.conv2(h)
+
+        # Reshape out_cls from (N, c_dim, 1, 1) to (N, c_dim)
         return out_src, out_cls.view(out_cls.size(0), out_cls.size(1))

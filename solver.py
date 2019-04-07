@@ -1,13 +1,14 @@
-from model import Generator
-from model import Discriminator
-from torch.autograd import Variable
-from torchvision.utils import save_image
-import torch
-import torch.nn.functional as F
-import numpy as np
+import datetime
 import os
 import time
-import datetime
+
+import numpy as np
+import torch
+import torch.nn.functional as F
+from torch.autograd import Variable
+from torchvision.utils import save_image
+
+from model import Discriminator, Generator
 
 
 class Solver(object):
@@ -44,6 +45,11 @@ class Solver(object):
         self.beta2 = config.beta2
         self.resume_iters = config.resume_iters
         self.selected_attrs = config.selected_attrs
+
+        # TODO: add the configs here
+        # Training configuration for sliced wasserstein loss.
+        self.use_sw_loss = config.use_sw_loss
+        self.num_projections = config.num_projections if self.use_sw_loss else 0
 
         # Test configurations.
         self.test_iters = config.test_iters
@@ -88,7 +94,7 @@ class Solver(object):
         self.d_optimizer = torch.optim.Adam(self.D.parameters(), self.d_lr, [self.beta1, self.beta2])
         self.print_network(self.G, 'G')
         self.print_network(self.D, 'D')
-            
+        
         self.G.to(self.device)
         self.D.to(self.device)
 
@@ -179,11 +185,17 @@ class Solver(object):
         return c_trg_list
 
     def classification_loss(self, logit, target, dataset='CelebA'):
-        """Compute binary or softmax cross entropy loss."""
+        """Compute binary or softmax cross entropy loss.
+        
+        Args:
+            logits: Vector of classification probabilities, shape (N, c_dim)
+            target: Vector of true mask labels, shape (N, c_dim)
+        """
         if dataset == 'CelebA':
             return F.binary_cross_entropy_with_logits(logit, target, size_average=False) / logit.size(0)
         elif dataset == 'RaFD':
             return F.cross_entropy(logit, target)
+
 
     def train(self):
         """Train StarGAN within a single dataset."""
@@ -343,6 +355,8 @@ class Solver(object):
                 d_lr -= (self.d_lr / float(self.num_iters_decay))
                 self.update_lr(g_lr, d_lr)
                 print ('Decayed learning rates, g_lr: {}, d_lr: {}.'.format(g_lr, d_lr))
+
+    # TODO: Add train_sw_loss() to train the model with sw loss instead of w loss for L_adv
 
     def train_multi(self):
         """Train StarGAN with multiple datasets."""        
