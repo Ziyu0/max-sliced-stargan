@@ -32,7 +32,7 @@ class EventLogger:
 
         # Create formatters and add it to handlers
         formatter = logging.Formatter(
-            '%(asctime)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S'
+            '[%(asctime)s] %(message)s', datefmt='%d-%b-%y %H:%M:%S'
         )
         file_hdl.setFormatter(formatter)
         console_hdl.setFormatter(formatter)
