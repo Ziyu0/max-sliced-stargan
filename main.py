@@ -53,6 +53,7 @@ def main(config):
             if config.use_sw_loss:
                 # Currently only training on single dataset supports sw loss
                 # TODO: enable sw loss for 'Both' dataset
+                print("Init training using SWD on {} dataset".format(config.dataset))
                 solver.train_sw_loss()
             else:
                 solver.train()
