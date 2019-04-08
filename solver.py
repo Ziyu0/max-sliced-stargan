@@ -469,7 +469,7 @@ class Solver(object):
                 num_samples = x_real.shape[0]
                 g_loss_fake = sliced_wasserstein_distance(
                     x_real.view(num_samples, -1), x_fake.view(num_samples, -1),
-                    self.num_projections
+                    self.num_projections, self.device
                 )
 
                 out_src, out_cls = self.D(x_fake)

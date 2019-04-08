@@ -3,7 +3,7 @@ import torch
 import torch.nn.functional as F
 
 
-def sliced_wasserstein_distance(true_samples, fake_samples, num_projections):
+def sliced_wasserstein_distance(true_samples, fake_samples, num_projections, device):
     """Compute Sliced Wasserstein Distance between real samples and
     generated samples.
 
@@ -12,6 +12,7 @@ def sliced_wasserstein_distance(true_samples, fake_samples, num_projections):
             Need to reshape images of (N, C, H, W) to (N, num_features) beforehand
         fake_samples: Samples from the generator, shape (N, num_features)
         num_projections(int)
+        device(str): device used when training
     Returns:
         Sliced Wasserstein Distance, a scalar
     """
@@ -20,7 +21,7 @@ def sliced_wasserstein_distance(true_samples, fake_samples, num_projections):
     # Random projection directions, shape (num_features, num_projections)
     projections = np.random.normal(size=(num_features, num_projections)).astype(np.float32)
     projections = F.normalize(torch.from_numpy(projections), p=2, dim=0)
-    projections = torch.FloatTensor(projections)
+    projections = torch.FloatTensor(projections).to(device)
 
     # Project the samples along the directions, get shape (N, num_projections)
     # Then transpose to (num_projections, N), format [projected_image1, projected_image2, ...]
