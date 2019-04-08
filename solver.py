@@ -207,6 +207,32 @@ class Solver(object):
         elif dataset == 'RaFD':
             return F.cross_entropy(logit, target)
 
+    # TODO: convert the Miscellaneous part og train into helper funcs
+    # (put everything after the if statement in the functions below)
+    def log_training_info(self):
+        """Helper function for training -
+        Print out training information and save the info to file.
+        """
+        pass
+
+    def translate_samples(self):
+        """Helper function for training -
+        Translate fixed images for debugging.
+        """
+        pass
+    
+    def save_checkpoints(self):
+        """Helper function for training -
+        Save model checkpoints.
+        """
+        pass
+    
+    def decay_learning_rates(self):
+        """Helper function for training -
+        Decay learning rates.
+        """
+        pass
+
 
     def train(self):
         """Train StarGAN within a single dataset."""
