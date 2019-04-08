@@ -20,6 +20,7 @@ def sliced_wasserstein_distance(true_samples, fake_samples, num_projections):
     # Random projection directions, shape (num_features, num_projections)
     projections = np.random.normal(size=(num_features, num_projections))
     projections = F.normalize(torch.from_numpy(projections), p=2, dim=0)
+    projections = torch.FloatTensor(projections)
 
     # Project the samples along the directions, get shape (N, num_projections)
     # Then transpose to (num_projections, N), format [projected_image1, projected_image2, ...]
