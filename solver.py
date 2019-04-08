@@ -70,6 +70,7 @@ class Solver(object):
         self.sample_dir = config.sample_dir
         self.model_save_dir = config.model_save_dir
         self.result_dir = config.result_dir
+        self.progress_dir = config.progress_dir
 
         # Step size.
         self.log_step = config.log_step
@@ -81,6 +82,9 @@ class Solver(object):
         self.build_model()
         if self.use_tensorboard:
             self.build_tensorboard()
+        
+        # Build event logger.
+        self.build_event_logger()
 
     def build_model(self):
         """Create a generator and a discriminator."""
@@ -120,6 +124,12 @@ class Solver(object):
         """Build a tensorboard logger."""
         from logger import Logger
         self.logger = Logger(self.log_dir)
+    
+    def build_event_logger(self):
+        """Build an event logger."""
+        from logger import EventLogger
+        event_path = self.progress_dir + "/progress.log"
+        self.event_logger = EventLogger('training', event_path)
 
     def update_lr(self, g_lr, d_lr):
         """Decay learning rates of the generator and discriminator."""
@@ -322,10 +332,11 @@ class Solver(object):
             if (i+1) % self.log_step == 0:
                 et = time.time() - start_time
                 et = str(datetime.timedelta(seconds=et))[:-7]
-                log = "Elapsed [{}], Iteration [{}/{}]".format(et, i+1, self.num_iters)
+                info = "Elapsed [{}], Iteration [{}/{}]".format(et, i+1, self.num_iters)
                 for tag, value in loss.items():
-                    log += ", {}: {:.4f}".format(tag, value)
-                print(log)
+                    info += ", {}: {:.4f}".format(tag, value)
+                # print(log)
+                self.event_logger.log(info)
 
                 if self.use_tensorboard:
                     for tag, value in loss.items():
@@ -340,7 +351,9 @@ class Solver(object):
                     x_concat = torch.cat(x_fake_list, dim=3)
                     sample_path = os.path.join(self.sample_dir, '{}-images.jpg'.format(i+1))
                     save_image(self.denorm(x_concat.data.cpu()), sample_path, nrow=1, padding=0)
-                    print('Saved real and fake images into {}...'.format(sample_path))
+                    # print('Saved real and fake images into {}...'.format(sample_path))
+                    info = 'Saved real and fake images into {}...'.format(sample_path)
+                    self.event_logger.log(info)
 
             # Save model checkpoints.
             if (i+1) % self.model_save_step == 0:
@@ -348,14 +361,18 @@ class Solver(object):
                 D_path = os.path.join(self.model_save_dir, '{}-D.ckpt'.format(i+1))
                 torch.save(self.G.state_dict(), G_path)
                 torch.save(self.D.state_dict(), D_path)
-                print('Saved model checkpoints into {}...'.format(self.model_save_dir))
+                # print('Saved model checkpoints into {}...'.format(self.model_save_dir))
+                info = 'Saved model checkpoints into {}...'.format(self.model_save_dir)
+                self.event_logger.log(info)
 
             # Decay learning rates.
             if (i+1) % self.lr_update_step == 0 and (i+1) > (self.num_iters - self.num_iters_decay):
                 g_lr -= (self.g_lr / float(self.num_iters_decay))
                 d_lr -= (self.d_lr / float(self.num_iters_decay))
                 self.update_lr(g_lr, d_lr)
-                print ('Decayed learning rates, g_lr: {}, d_lr: {}.'.format(g_lr, d_lr))
+                # print ('Decayed learning rates, g_lr: {}, d_lr: {}.'.format(g_lr, d_lr))
+                info = 'Decayed learning rates, g_lr: {}, d_lr: {}.'.format(g_lr, d_lr)
+                self.event_logger.log(info)
 
     def train_sw_loss(self):
         """Train StarGAN within a single dataset using Sliced Wasserstein Distance."""
@@ -481,10 +498,11 @@ class Solver(object):
             if (i+1) % self.log_step == 0:
                 et = time.time() - start_time
                 et = str(datetime.timedelta(seconds=et))[:-7]
-                log = "Elapsed [{}], Iteration [{}/{}]".format(et, i+1, self.num_iters)
+                info = "Elapsed [{}], Iteration [{}/{}]".format(et, i+1, self.num_iters)
                 for tag, value in loss.items():
-                    log += ", {}: {:.4f}".format(tag, value)
-                print(log)
+                    info += ", {}: {:.4f}".format(tag, value)
+                # print(log)
+                self.event_logger.log(info)
 
                 if self.use_tensorboard:
                     for tag, value in loss.items():
@@ -499,7 +517,9 @@ class Solver(object):
                     x_concat = torch.cat(x_fake_list, dim=3)
                     sample_path = os.path.join(self.sample_dir, '{}-images.jpg'.format(i+1))
                     save_image(self.denorm(x_concat.data.cpu()), sample_path, nrow=1, padding=0)
-                    print('Saved real and fake images into {}...'.format(sample_path))
+                    # print('Saved real and fake images into {}...'.format(sample_path))
+                    info = 'Saved real and fake images into {}...'.format(sample_path)
+                    self.event_logger.log(info)
 
             # Save model checkpoints.
             if (i+1) % self.model_save_step == 0:
@@ -507,14 +527,18 @@ class Solver(object):
                 D_path = os.path.join(self.model_save_dir, '{}-D.ckpt'.format(i+1))
                 torch.save(self.G.state_dict(), G_path)
                 torch.save(self.D.state_dict(), D_path)
-                print('Saved model checkpoints into {}...'.format(self.model_save_dir))
-
+                # print('Saved model checkpoints into {}...'.format(self.model_save_dir))
+                info = 'Saved model checkpoints into {}...'.format(self.model_save_dir)
+                self.event_logger.log(info)
+            
             # Decay learning rates.
             if (i+1) % self.lr_update_step == 0 and (i+1) > (self.num_iters - self.num_iters_decay):
                 g_lr -= (self.g_lr / float(self.num_iters_decay))
                 d_lr -= (self.d_lr / float(self.num_iters_decay))
                 self.update_lr(g_lr, d_lr)
-                print ('Decayed learning rates, g_lr: {}, d_lr: {}.'.format(g_lr, d_lr))
+                # print ('Decayed learning rates, g_lr: {}, d_lr: {}.'.format(g_lr, d_lr))
+                info = 'Decayed learning rates, g_lr: {}, d_lr: {}.'.format(g_lr, d_lr)
+                self.event_logger.log(info)
 
     def train_multi(self):
         """Train StarGAN with multiple datasets."""        
@@ -659,10 +683,11 @@ class Solver(object):
                 if (i+1) % self.log_step == 0:
                     et = time.time() - start_time
                     et = str(datetime.timedelta(seconds=et))[:-7]
-                    log = "Elapsed [{}], Iteration [{}/{}], Dataset [{}]".format(et, i+1, self.num_iters, dataset)
+                    info = "Elapsed [{}], Iteration [{}/{}], Dataset [{}]".format(et, i+1, self.num_iters, dataset)
                     for tag, value in loss.items():
-                        log += ", {}: {:.4f}".format(tag, value)
-                    print(log)
+                        info += ", {}: {:.4f}".format(tag, value)
+                    # print(log)
+                    self.event_logger.log(info)
 
                     if self.use_tensorboard:
                         for tag, value in loss.items():
@@ -681,7 +706,9 @@ class Solver(object):
                     x_concat = torch.cat(x_fake_list, dim=3)
                     sample_path = os.path.join(self.sample_dir, '{}-images.jpg'.format(i+1))
                     save_image(self.denorm(x_concat.data.cpu()), sample_path, nrow=1, padding=0)
-                    print('Saved real and fake images into {}...'.format(sample_path))
+                    # print('Saved real and fake images into {}...'.format(sample_path))
+                    info = 'Saved real and fake images into {}...'.format(sample_path)
+                    self.event_logger.log(info)
 
             # Save model checkpoints.
             if (i+1) % self.model_save_step == 0:
@@ -689,14 +716,18 @@ class Solver(object):
                 D_path = os.path.join(self.model_save_dir, '{}-D.ckpt'.format(i+1))
                 torch.save(self.G.state_dict(), G_path)
                 torch.save(self.D.state_dict(), D_path)
-                print('Saved model checkpoints into {}...'.format(self.model_save_dir))
+                # print('Saved model checkpoints into {}...'.format(self.model_save_dir))
+                info = 'Saved model checkpoints into {}...'.format(self.model_save_dir)
+                self.event_logger.log(info)
 
             # Decay learning rates.
             if (i+1) % self.lr_update_step == 0 and (i+1) > (self.num_iters - self.num_iters_decay):
                 g_lr -= (self.g_lr / float(self.num_iters_decay))
                 d_lr -= (self.d_lr / float(self.num_iters_decay))
                 self.update_lr(g_lr, d_lr)
-                print ('Decayed learning rates, g_lr: {}, d_lr: {}.'.format(g_lr, d_lr))
+                # print ('Decayed learning rates, g_lr: {}, d_lr: {}.'.format(g_lr, d_lr))
+                info = 'Decayed learning rates, g_lr: {}, d_lr: {}.'.format(g_lr, d_lr)
+                self.event_logger.log(info)
 
     def test(self):
         """Translate images using StarGAN trained on a single dataset."""
