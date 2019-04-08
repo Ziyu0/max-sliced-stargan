@@ -15,13 +15,6 @@ def sliced_wasserstein_distance(true_samples, fake_samples, num_projections):
     Returns:
         Sliced Wasserstein Distance, a scalar
     """
-    # Reshape samples into (N, num_features)
-    _, channels, height, width = true_samples.shape
-    num_features = channels * height * width
-
-    true_samples = true_samples.view(-1, num_features)
-    fake_samples = fake_samples.view(-1, num_features)
-
     # Random projection directions, shape (num_features, num_projections)
     projections = np.random.normal(size=(num_features, num_projections))
     projections = F.normalize(torch.from_numpy(projections), p=2, dim=0)
