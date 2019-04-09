@@ -6,6 +6,7 @@ N_CRITIC=5
 C_DIM=3
 SELECTED_ATTRS=("Blond_Hair" "Male" "Young")
 CUDA_DEVICE_NAME="cuda:1"
+RESUME_ITERS=0  # 0 means not resume
 
 EXP_ROOT_DIR="stargan_celeba_sw_1"
 USE_SW_LOSS=True
@@ -36,4 +37,5 @@ python main.py \
 --num_iters $NUM_ITERS \
 --num_iters_decay $NUM_ITERS_DECAY \
 --num_projections $NUM_PROJECTIONS \
---model_save_step $MODEL_SAVE_STEP
+--model_save_step $MODEL_SAVE_STEP \
+--resume_iters $RESUME_ITERS
