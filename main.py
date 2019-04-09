@@ -53,7 +53,6 @@ def main(config):
             if config.use_sw_loss:
                 # Currently only training on single dataset supports sw loss
                 # TODO: enable sw loss for 'Both' dataset
-                print("Init training using SWD on {} dataset".format(config.dataset))
                 solver.train_sw_loss()
             else:
                 solver.train()
@@ -98,9 +97,10 @@ if __name__ == '__main__':
                         default=['Black_Hair', 'Blond_Hair', 'Brown_Hair', 'Male', 'Young'])
 
     # Training configuration for sliced wasserstein loss.
-    # TODO: add config to choose the train_sw_loss() training method
+    # TODO: add use_discriminator_feat: use feature produced by the D to compute the swd
     parser.add_argument('--use_sw_loss', type=str2bool, default=False, help='train using sliced wasserstein loss')
     parser.add_argument('--num_projections', type=int, default=10000, help='num of projections used to compute the swd')
+    parser.add_argument('--use_d_feature', type=str2bool, default=False, help='use features of the discriminator to get swd')
 
     # Test configuration.
     parser.add_argument('--test_iters', type=int, default=200000, help='test model from this step')

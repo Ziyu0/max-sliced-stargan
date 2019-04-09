@@ -51,6 +51,7 @@ class Solver(object):
         # Training configuration for sliced wasserstein loss.
         self.use_sw_loss = config.use_sw_loss
         self.num_projections = config.num_projections if self.use_sw_loss else 0
+        self.use_d_feature = config.use_d_feature
 
         # Test configurations.
         self.test_iters = config.test_iters
@@ -468,7 +469,7 @@ class Solver(object):
             self.restore_model(self.resume_iters)
 
         # Start training.
-        print('Start training...')
+        print('Start training using SWD on {} dataset...'.format(self.dataset))
         start_time = time.time()
         for i in range(start_iters, self.num_iters):
 
@@ -503,6 +504,11 @@ class Solver(object):
             # =================================================================================== #
             #                             2. Train the discriminator                              #
             # =================================================================================== #
+            
+            # TODO: add a return value of the features for self.D everytime we use it
+            # if use discriminator with swd, need to:
+            # x_real -> D -> x_real_feature -> pass to swd
+            # x_fake -> D -> x_fake_feature -> pass to swd
 
             # Compute loss with real images (use Cross Entropy instead of Wasserstein-GP).
             out_src, out_cls = self.D(x_real)
