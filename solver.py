@@ -229,20 +229,21 @@ class Solver(object):
             for tag, value in loss.items():
                 self.logger.scalar_summary(tag, value, step+1)
 
-    def translate_samples(self, x_fixed, c_fixed_list, step):
+    def translate_samples(self, step, x_fixed, c_fixed_list):
         """Helper function for training - Translate fixed images for debugging.
 
         Args:
-            x_fixed(tensor): Real images, shape (N, C, H, W)
-            c_fixed_list(list<tensor>): target labels, each item's shape = (N, c_dim)
             step(int): Currrent iteration step
+            x_fixed(tensor): Real images, shape (N, C, H, W)
+            c_fixed_list(list<tensor>): Target labels, each item's shape = (N, c_dim)
         """
+        with torch.no_grad():            
+            # Control the number of sampled used
+            limit = x_fixed.size(0) if x_fixed.size(0) < 16 else 16
 
-        with torch.no_grad():
-
-            x_fake_list = [x_fixed]
+            x_fake_list = [x_fixed[:limit, :, :, :]]
             for c_fixed in c_fixed_list:
-                x_fake_list.append(self.G(x_fixed, c_fixed))
+                x_fake_list.append(self.G(x_fixed, c_fixed[:limit, :]))
             
             x_concat = torch.cat(x_fake_list, dim=3)
             sample_path = os.path.join(self.sample_dir, '{}-images.jpg'.format(step + 1))
@@ -250,17 +251,33 @@ class Solver(object):
             info = 'Saved real and fake images into {}...'.format(sample_path)
             self.event_logger.log(info)
     
-    def translate_samples_multi(self, x_fixed, c_celeba_list, c_rafd_list, step,
-                                zero_rafd, mask_celeba, zero_celeba, mask_rafd):
-        """Helper function for training - Translate fixed images for debugging."""
-
+    def translate_samples_multi(self, step, x_fixed, c_celeba_list, c_rafd_list,
+                                zero_rafd, zero_celeba, mask_celeba, mask_rafd):
+        """Helper function for training - Translate fixed images for debugging.
+        
+        Args:
+            step(int): Currrent iteration step
+            x_fixed(tensor): Real images, shape (N, C, H, W)
+            c_celeba_list, c_rafd_list(list<tensor>): Target labels, each item's shape = (N, c_dim)
+            zero_rafd, zero_celeba(tensor): shape (N, c_dim)
+            mask_celeba, mask_rafd(tensor): shape (N, c_dim)
+        """
         with torch.no_grad():
-            x_fake_list = [x_fixed]
+            # Control the number of sampled used
+            limit = x_fixed.size(0) if x_fixed.size(0) < 16 else 16
+
+            x_fake_list = [x_fixed[:limit, :, :, :]]
             for c_fixed in c_celeba_list:
-                c_trg = torch.cat([c_fixed, zero_rafd, mask_celeba], dim=1)
+                c_trg = torch.cat(
+                    [c_fixed[:limit, :], zero_rafd[:limit, :], mask_celeba[:limit, :]], 
+                    dim=1
+                )
                 x_fake_list.append(self.G(x_fixed, c_trg))
             for c_fixed in c_rafd_list:
-                c_trg = torch.cat([zero_celeba, c_fixed, mask_rafd], dim=1)
+                c_trg = torch.cat(
+                    [zero_celeba[:limit, :], c_fixed[:limit, :], mask_rafd[:limit, :]], 
+                    dim=1
+                )
                 x_fake_list.append(self.G(x_fixed, c_trg))
             
             x_concat = torch.cat(x_fake_list, dim=3)
@@ -408,19 +425,8 @@ class Solver(object):
                 self.log_training_info(et, loss, i)
 
             # Translate fixed images for debugging.
-            # FIXME: number of sampled used here = batch size
-            # So when batch_size=128, there will be too many samples!!
             if (i+1) % self.sample_step == 0:
-                with torch.no_grad():
-                    x_fake_list = [x_fixed]
-                    for c_fixed in c_fixed_list:
-                        x_fake_list.append(self.G(x_fixed, c_fixed))
-                    x_concat = torch.cat(x_fake_list, dim=3)
-                    sample_path = os.path.join(self.sample_dir, '{}-images.jpg'.format(i+1))
-                    save_image(self.denorm(x_concat.data.cpu()), sample_path, nrow=1, padding=0)
-                    # print('Saved real and fake images into {}...'.format(sample_path))
-                    info = 'Saved real and fake images into {}...'.format(sample_path)
-                    self.event_logger.log(info)
+                self.translate_samples(i, x_fixed, c_fixed_list)
 
             # Save model checkpoints.
             if (i+1) % self.model_save_step == 0:
@@ -568,16 +574,7 @@ class Solver(object):
 
             # Translate fixed images for debugging.
             if (i+1) % self.sample_step == 0:
-                with torch.no_grad():
-                    x_fake_list = [x_fixed]
-                    for c_fixed in c_fixed_list:
-                        x_fake_list.append(self.G(x_fixed, c_fixed))
-                    x_concat = torch.cat(x_fake_list, dim=3)
-                    sample_path = os.path.join(self.sample_dir, '{}-images.jpg'.format(i+1))
-                    save_image(self.denorm(x_concat.data.cpu()), sample_path, nrow=1, padding=0)
-                    # print('Saved real and fake images into {}...'.format(sample_path))
-                    info = 'Saved real and fake images into {}...'.format(sample_path)
-                    self.event_logger.log(info)
+                self.translate_samples(i, x_fixed, c_fixed_list)
 
             # Save model checkpoints.
             if (i+1) % self.model_save_step == 0:
@@ -744,20 +741,8 @@ class Solver(object):
 
             # Translate fixed images for debugging.
             if (i+1) % self.sample_step == 0:
-                with torch.no_grad():
-                    x_fake_list = [x_fixed]
-                    for c_fixed in c_celeba_list:
-                        c_trg = torch.cat([c_fixed, zero_rafd, mask_celeba], dim=1)
-                        x_fake_list.append(self.G(x_fixed, c_trg))
-                    for c_fixed in c_rafd_list:
-                        c_trg = torch.cat([zero_celeba, c_fixed, mask_rafd], dim=1)
-                        x_fake_list.append(self.G(x_fixed, c_trg))
-                    x_concat = torch.cat(x_fake_list, dim=3)
-                    sample_path = os.path.join(self.sample_dir, '{}-images.jpg'.format(i+1))
-                    save_image(self.denorm(x_concat.data.cpu()), sample_path, nrow=1, padding=0)
-                    # print('Saved real and fake images into {}...'.format(sample_path))
-                    info = 'Saved real and fake images into {}...'.format(sample_path)
-                    self.event_logger.log(info)
+                self.translate_samples_multi(i, x_fixed, c_celeba_list, c_rafd_list,
+                                             zero_rafd, zero_celeba, mask_celeba, mask_rafd)
 
             # Save model checkpoints.
             if (i+1) % self.model_save_step == 0:
