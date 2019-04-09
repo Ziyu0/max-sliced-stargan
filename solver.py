@@ -286,17 +286,24 @@ class Solver(object):
             info = 'Saved real and fake images into {}...'.format(sample_path)
             self.event_logger.log(info)
     
-    def save_checkpoints(self):
-        """Helper function for training -
-        Save model checkpoints.
-        """
-        pass
+    def save_checkpoints(self, step):
+        """Helper function for training - Save model checkpoints."""
+        G_path = os.path.join(self.model_save_dir, '{}-G.ckpt'.format(step + 1))
+        D_path = os.path.join(self.model_save_dir, '{}-D.ckpt'.format(step + 1))
+        torch.save(self.G.state_dict(), G_path)
+        torch.save(self.D.state_dict(), D_path)
+        info = 'Saved model checkpoints into {}...'.format(self.model_save_dir)
+        self.event_logger.log(info)
     
-    def decay_learning_rates(self):
-        """Helper function for training -
-        Decay learning rates.
-        """
-        pass
+    def decay_learning_rates(self, g_lr, d_lr):
+        """Helper function for training - Decay learning rates."""
+        g_lr -= (self.g_lr / float(self.num_iters_decay))
+        d_lr -= (self.d_lr / float(self.num_iters_decay))
+        self.update_lr(g_lr, d_lr)
+        info = 'Decayed learning rates, g_lr: {}, d_lr: {}.'.format(g_lr, d_lr)
+        self.event_logger.log(info)
+
+        return g_lr, d_lr
 
 
     def train(self):
@@ -430,22 +437,11 @@ class Solver(object):
 
             # Save model checkpoints.
             if (i+1) % self.model_save_step == 0:
-                G_path = os.path.join(self.model_save_dir, '{}-G.ckpt'.format(i+1))
-                D_path = os.path.join(self.model_save_dir, '{}-D.ckpt'.format(i+1))
-                torch.save(self.G.state_dict(), G_path)
-                torch.save(self.D.state_dict(), D_path)
-                # print('Saved model checkpoints into {}...'.format(self.model_save_dir))
-                info = 'Saved model checkpoints into {}...'.format(self.model_save_dir)
-                self.event_logger.log(info)
+                self.save_checkpoints(i)
 
             # Decay learning rates.
             if (i+1) % self.lr_update_step == 0 and (i+1) > (self.num_iters - self.num_iters_decay):
-                g_lr -= (self.g_lr / float(self.num_iters_decay))
-                d_lr -= (self.d_lr / float(self.num_iters_decay))
-                self.update_lr(g_lr, d_lr)
-                # print ('Decayed learning rates, g_lr: {}, d_lr: {}.'.format(g_lr, d_lr))
-                info = 'Decayed learning rates, g_lr: {}, d_lr: {}.'.format(g_lr, d_lr)
-                self.event_logger.log(info)
+                g_lr, d_lr = self.decay_learning_rates(g_lr, d_lr)
 
     def train_sw_loss(self):
         """Train StarGAN within a single dataset using Sliced Wasserstein Distance."""
@@ -578,22 +574,11 @@ class Solver(object):
 
             # Save model checkpoints.
             if (i+1) % self.model_save_step == 0:
-                G_path = os.path.join(self.model_save_dir, '{}-G.ckpt'.format(i+1))
-                D_path = os.path.join(self.model_save_dir, '{}-D.ckpt'.format(i+1))
-                torch.save(self.G.state_dict(), G_path)
-                torch.save(self.D.state_dict(), D_path)
-                # print('Saved model checkpoints into {}...'.format(self.model_save_dir))
-                info = 'Saved model checkpoints into {}...'.format(self.model_save_dir)
-                self.event_logger.log(info)
+                self.save_checkpoints(i)
             
             # Decay learning rates.
             if (i+1) % self.lr_update_step == 0 and (i+1) > (self.num_iters - self.num_iters_decay):
-                g_lr -= (self.g_lr / float(self.num_iters_decay))
-                d_lr -= (self.d_lr / float(self.num_iters_decay))
-                self.update_lr(g_lr, d_lr)
-                # print ('Decayed learning rates, g_lr: {}, d_lr: {}.'.format(g_lr, d_lr))
-                info = 'Decayed learning rates, g_lr: {}, d_lr: {}.'.format(g_lr, d_lr)
-                self.event_logger.log(info)
+                g_lr, d_lr = self.decay_learning_rates(g_lr, d_lr)
 
     def train_multi(self):
         """Train StarGAN with multiple datasets."""        
@@ -746,22 +731,11 @@ class Solver(object):
 
             # Save model checkpoints.
             if (i+1) % self.model_save_step == 0:
-                G_path = os.path.join(self.model_save_dir, '{}-G.ckpt'.format(i+1))
-                D_path = os.path.join(self.model_save_dir, '{}-D.ckpt'.format(i+1))
-                torch.save(self.G.state_dict(), G_path)
-                torch.save(self.D.state_dict(), D_path)
-                # print('Saved model checkpoints into {}...'.format(self.model_save_dir))
-                info = 'Saved model checkpoints into {}...'.format(self.model_save_dir)
-                self.event_logger.log(info)
+                self.save_checkpoints(i)
 
             # Decay learning rates.
             if (i+1) % self.lr_update_step == 0 and (i+1) > (self.num_iters - self.num_iters_decay):
-                g_lr -= (self.g_lr / float(self.num_iters_decay))
-                d_lr -= (self.d_lr / float(self.num_iters_decay))
-                self.update_lr(g_lr, d_lr)
-                # print ('Decayed learning rates, g_lr: {}, d_lr: {}.'.format(g_lr, d_lr))
-                info = 'Decayed learning rates, g_lr: {}, d_lr: {}.'.format(g_lr, d_lr)
-                self.event_logger.log(info)
+                g_lr, d_lr = self.decay_learning_rates(g_lr, d_lr)
 
     def test(self):
         """Translate images using StarGAN trained on a single dataset."""
