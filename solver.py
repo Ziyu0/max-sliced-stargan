@@ -209,17 +209,65 @@ class Solver(object):
 
     # TODO: convert the Miscellaneous part og train into helper funcs
     # (put everything after the if statement in the functions below)
-    def log_training_info(self):
-        """Helper function for training -
-        Print out training information and save the info to file.
-        """
-        pass
+    def log_training_info(self, et, loss, step):
+        """Helper function for training - Print out training information and 
+        save the info to file. Add summary to tensorboard if enabled.
 
-    def translate_samples(self):
-        """Helper function for training -
-        Translate fixed images for debugging.
+        Args:
+            et: Elasped time of the current training step from the start time
+            loss(dict): Dictionary containing loss of the generator and discriminator
+            step(int): Currrent iteration step
         """
-        pass
+        et = str(datetime.timedelta(seconds=et))[:-7]
+        info = "Elapsed [{}], Iteration [{}/{}]".format(et, step+1, self.num_iters)
+        for tag, value in loss.items():
+            info += ", {}: {:.4f}".format(tag, value)
+
+        self.event_logger.log(info)
+
+        if self.use_tensorboard:
+            for tag, value in loss.items():
+                self.logger.scalar_summary(tag, value, step+1)
+
+    def translate_samples(self, x_fixed, c_fixed_list, step):
+        """Helper function for training - Translate fixed images for debugging.
+
+        Args:
+            x_fixed(tensor): Real images, shape (N, C, H, W)
+            c_fixed_list(list<tensor>): target labels, each item's shape = (N, c_dim)
+            step(int): Currrent iteration step
+        """
+
+        with torch.no_grad():
+
+            x_fake_list = [x_fixed]
+            for c_fixed in c_fixed_list:
+                x_fake_list.append(self.G(x_fixed, c_fixed))
+            
+            x_concat = torch.cat(x_fake_list, dim=3)
+            sample_path = os.path.join(self.sample_dir, '{}-images.jpg'.format(step + 1))
+            save_image(self.denorm(x_concat.data.cpu()), sample_path, nrow=1, padding=0)
+            info = 'Saved real and fake images into {}...'.format(sample_path)
+            self.event_logger.log(info)
+    
+    def translate_samples_multi(self, x_fixed, c_celeba_list, c_rafd_list, step,
+                                zero_rafd, mask_celeba, zero_celeba, mask_rafd):
+        """Helper function for training - Translate fixed images for debugging."""
+
+        with torch.no_grad():
+            x_fake_list = [x_fixed]
+            for c_fixed in c_celeba_list:
+                c_trg = torch.cat([c_fixed, zero_rafd, mask_celeba], dim=1)
+                x_fake_list.append(self.G(x_fixed, c_trg))
+            for c_fixed in c_rafd_list:
+                c_trg = torch.cat([zero_celeba, c_fixed, mask_rafd], dim=1)
+                x_fake_list.append(self.G(x_fixed, c_trg))
+            
+            x_concat = torch.cat(x_fake_list, dim=3)
+            sample_path = os.path.join(self.sample_dir, '{}-images.jpg'.format(step + 1))
+            save_image(self.denorm(x_concat.data.cpu()), sample_path, nrow=1, padding=0)
+            info = 'Saved real and fake images into {}...'.format(sample_path)
+            self.event_logger.log(info)
     
     def save_checkpoints(self):
         """Helper function for training -
@@ -356,19 +404,12 @@ class Solver(object):
 
             # Print out training information.
             if (i+1) % self.log_step == 0:
-                et = time.time() - start_time
-                et = str(datetime.timedelta(seconds=et))[:-7]
-                info = "Elapsed [{}], Iteration [{}/{}]".format(et, i+1, self.num_iters)
-                for tag, value in loss.items():
-                    info += ", {}: {:.4f}".format(tag, value)
-                # print(log)
-                self.event_logger.log(info)
-
-                if self.use_tensorboard:
-                    for tag, value in loss.items():
-                        self.logger.scalar_summary(tag, value, i+1)
+                et = time.time() - start_time  ### Pass this et to log_training_info
+                self.log_training_info(et, loss, i)
 
             # Translate fixed images for debugging.
+            # FIXME: number of sampled used here = batch size
+            # So when batch_size=128, there will be too many samples!!
             if (i+1) % self.sample_step == 0:
                 with torch.no_grad():
                     x_fake_list = [x_fixed]
@@ -522,17 +563,8 @@ class Solver(object):
 
             # Print out training information.
             if (i+1) % self.log_step == 0:
-                et = time.time() - start_time
-                et = str(datetime.timedelta(seconds=et))[:-7]
-                info = "Elapsed [{}], Iteration [{}/{}]".format(et, i+1, self.num_iters)
-                for tag, value in loss.items():
-                    info += ", {}: {:.4f}".format(tag, value)
-                # print(log)
-                self.event_logger.log(info)
-
-                if self.use_tensorboard:
-                    for tag, value in loss.items():
-                        self.logger.scalar_summary(tag, value, i+1)
+                et = time.time() - start_time  ### Pass this et to log_training_info
+                self.log_training_info(et, loss, i)
 
             # Translate fixed images for debugging.
             if (i+1) % self.sample_step == 0:
@@ -708,16 +740,7 @@ class Solver(object):
                 # Print out training info.
                 if (i+1) % self.log_step == 0:
                     et = time.time() - start_time
-                    et = str(datetime.timedelta(seconds=et))[:-7]
-                    info = "Elapsed [{}], Iteration [{}/{}], Dataset [{}]".format(et, i+1, self.num_iters, dataset)
-                    for tag, value in loss.items():
-                        info += ", {}: {:.4f}".format(tag, value)
-                    # print(log)
-                    self.event_logger.log(info)
-
-                    if self.use_tensorboard:
-                        for tag, value in loss.items():
-                            self.logger.scalar_summary(tag, value, i+1)
+                    self.log_training_info(et, loss, i)
 
             # Translate fixed images for debugging.
             if (i+1) % self.sample_step == 0:

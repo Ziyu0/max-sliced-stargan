@@ -13,6 +13,7 @@ BATCH_SIZE=128
 NUM_ITERS=10000
 NUM_ITERS_DECAY=5000
 NUM_PROJECTIONS=10000
+MODEL_SAVE_STEP=1000
 
 
 # Train
@@ -34,4 +35,5 @@ python main.py \
 --batch_size $BATCH_SIZE \
 --num_iters $NUM_ITERS \
 --num_iters_decay $NUM_ITERS_DECAY \
---num_projections $NUM_PROJECTIONS
+--num_projections $NUM_PROJECTIONS \
+--model_save_step $MODEL_SAVE_STEP

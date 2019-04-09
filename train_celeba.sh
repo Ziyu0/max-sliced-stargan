@@ -12,6 +12,7 @@ USE_SW_LOSS=False
 BATCH_SIZE=16
 NUM_ITERS=200000
 NUM_ITERS_DECAY=100000
+MODEL_SAVE_STEP=20000
 
 
 # Train
@@ -32,4 +33,5 @@ python main.py \
 --use_sw_loss $USE_SW_LOSS \
 --batch_size $BATCH_SIZE \
 --num_iters $NUM_ITERS \
---num_iters_decay $NUM_ITERS_DECAY
+--num_iters_decay $NUM_ITERS_DECAY \
+--model_save_step $MODEL_SAVE_STEP

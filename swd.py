@@ -16,6 +16,9 @@ def sliced_wasserstein_distance(true_samples, fake_samples, num_projections, dev
     Returns:
         Sliced Wasserstein Distance, a scalar
     """
+
+    # FIXME: loss is very close to 0 all the time -> vanishing gradient?
+
     num_features = true_samples.shape[1]
 
     # Random projection directions, shape (num_features, num_projections)
