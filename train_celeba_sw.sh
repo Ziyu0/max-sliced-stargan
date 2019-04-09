@@ -12,7 +12,7 @@ EXP_ROOT_DIR="stargan_celeba_sw_1"
 USE_SW_LOSS=True
 BATCH_SIZE=128
 NUM_ITERS=10000
-NUM_ITERS_DECAY=5000
+NUM_ITERS_DECAY=5000  # 0 means not decay, 5000 means LR will be decayed in the last 5000 iters
 NUM_PROJECTIONS=10000
 MODEL_SAVE_STEP=1000
 

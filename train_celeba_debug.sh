@@ -5,16 +5,18 @@ IMAGE_SIZE=64
 N_CRITIC=5
 C_DIM=3
 SELECTED_ATTRS=("Blond_Hair" "Male" "Young")
-CUDA_DEVICE_NAME="cuda:1"
-RESUME_ITERS=0  # 0 means not resume
+CUDA_DEVICE_NAME="cuda:0"
+RESUME_ITERS=11000  # 0 means not resume
 
-EXP_ROOT_DIR="stargan_celeba_1"
-USE_SW_LOSS=False
-BATCH_SIZE=16
-NUM_ITERS=200000
-NUM_ITERS_DECAY=100000  # 0 means not decay, 5000 means LR will be decayed in the last 5000 iters
-MODEL_SAVE_STEP=20000
-
+EXP_ROOT_DIR="stargan_celeba_sw_2"
+USE_SW_LOSS=True
+BATCH_SIZE=128
+NUM_ITERS=25000
+NUM_ITERS_DECAY=25000           # debug decay_learning_rates()
+LR_UPDATE_STEP=10               # debug decay_learning_rates()
+NUM_PROJECTIONS=10000
+MODEL_SAVE_STEP=10              # debug save_checkpoints()
+SAMPLE_STEP=10                  # debug translate_samples()
 
 # Train
 python main.py \
@@ -35,5 +37,8 @@ python main.py \
 --batch_size $BATCH_SIZE \
 --num_iters $NUM_ITERS \
 --num_iters_decay $NUM_ITERS_DECAY \
+--num_projections $NUM_PROJECTIONS \
 --model_save_step $MODEL_SAVE_STEP \
---resume_iters $RESUME_ITERS
+--resume_iters $RESUME_ITERS \
+--sample_step $SAMPLE_STEP \
+--lr_update_step $LR_UPDATE_STEP

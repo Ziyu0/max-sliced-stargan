@@ -207,8 +207,6 @@ class Solver(object):
         elif dataset == 'RaFD':
             return F.cross_entropy(logit, target)
 
-    # TODO: convert the Miscellaneous part og train into helper funcs
-    # (put everything after the if statement in the functions below)
     def log_training_info(self, et, loss, step):
         """Helper function for training - Print out training information and 
         save the info to file. Add summary to tensorboard if enabled.
@@ -241,7 +239,8 @@ class Solver(object):
             # Control the number of sampled used
             limit = x_fixed.size(0) if x_fixed.size(0) < 16 else 16
 
-            x_fake_list = [x_fixed[:limit, :, :, :]]
+            x_fixed = x_fixed[:limit, :, :, :]
+            x_fake_list = [x_fixed]
             for c_fixed in c_fixed_list:
                 x_fake_list.append(self.G(x_fixed, c_fixed[:limit, :]))
             
@@ -266,7 +265,8 @@ class Solver(object):
             # Control the number of sampled used
             limit = x_fixed.size(0) if x_fixed.size(0) < 16 else 16
 
-            x_fake_list = [x_fixed[:limit, :, :, :]]
+            x_fixed = x_fixed[:limit, :, :, :]
+            x_fake_list = [x_fixed]
             for c_fixed in c_celeba_list:
                 c_trg = torch.cat(
                     [c_fixed[:limit, :], zero_rafd[:limit, :], mask_celeba[:limit, :]], 
