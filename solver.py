@@ -512,6 +512,8 @@ class Solver(object):
 
             # Compute loss with real images (use Cross Entropy instead of Wasserstein-GP).
             out_src, out_cls = self.D(x_real)
+
+            # TODO: Do I need to change this?
             d_loss_real = F.binary_cross_entropy_with_logits(out_src, torch.ones_like(out_src))
 
             d_loss_cls = self.classification_loss(out_cls, label_org, self.dataset)
