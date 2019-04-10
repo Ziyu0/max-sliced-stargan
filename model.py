@@ -86,7 +86,8 @@ class Discriminator(nn.Module):
 
 
         # TODO: return the second to last layer as features
-        # don't need to add a use_discriminator param
+        # ~~don't need to add a use_discriminator param~~
+        # UPDATE: pass a use_d_feature into the init
         # NOTE: compare it with the algorithm of max swd before actually chaning this D
         # => also check shape of h (but this doesn't matter actually,
         # we just need to reshape it as (num_samples, -1))
