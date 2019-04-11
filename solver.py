@@ -91,10 +91,12 @@ class Solver(object):
         """Create a generator and a discriminator."""
         if self.dataset in ['CelebA', 'RaFD']:
             self.G = Generator(self.g_conv_dim, self.c_dim, self.g_repeat_num)
-            self.D = Discriminator(self.image_size, self.d_conv_dim, self.c_dim, self.d_repeat_num) 
+            self.D = Discriminator(self.image_size, self.d_conv_dim, self.c_dim, self.d_repeat_num,
+                                   use_d_feature=(self.use_sw_loss and self.use_d_feature)) 
         elif self.dataset in ['Both']:
             self.G = Generator(self.g_conv_dim, self.c_dim+self.c2_dim+2, self.g_repeat_num)   # 2 for mask vector.
-            self.D = Discriminator(self.image_size, self.d_conv_dim, self.c_dim+self.c2_dim, self.d_repeat_num)
+            self.D = Discriminator(self.image_size, self.d_conv_dim, self.c_dim+self.c2_dim, self.d_repeat_num,
+                                   use_d_feature=(self.use_sw_loss and self.use_d_feature))
 
         self.g_optimizer = torch.optim.Adam(self.G.parameters(), self.g_lr, [self.beta1, self.beta2])
         self.d_optimizer = torch.optim.Adam(self.D.parameters(), self.d_lr, [self.beta1, self.beta2])
@@ -506,12 +508,12 @@ class Solver(object):
             # =================================================================================== #
             
             # TODO: add a return value of the features for self.D everytime we use it
-            # if use discriminator with swd, need to:
-            # x_real -> D -> x_real_feature -> pass to swd
-            # x_fake -> D -> x_fake_feature -> pass to swd
 
             # Compute loss with real images (use Cross Entropy instead of Wasserstein-GP).
-            out_src, out_cls = self.D(x_real)
+            if self.use_d_feature:
+                out_src, out_cls, _ = self.D(x_real)
+            else:
+                out_src, out_cls = self.D(x_real)
 
             # TODO: Do I need to change this?
             d_loss_real = F.binary_cross_entropy_with_logits(out_src, torch.ones_like(out_src))
@@ -520,7 +522,12 @@ class Solver(object):
 
             # Compute loss with fake images (use Cross Entropy instead of Wasserstein-GP).
             x_fake = self.G(x_real, c_trg)
-            out_src, out_cls = self.D(x_fake.detach())
+
+            if self.use_d_feature:
+                out_src, out_cls, _ = self.D(x_fake.detach())  # detach to avoid training G on these labels
+            else:
+                out_src, out_cls = self.D(x_fake.detach())
+
             d_loss_fake = F.binary_cross_entropy_with_logits(out_src, torch.zeros_like(out_src))
 
             # Backward and optimize.
@@ -544,12 +551,29 @@ class Solver(object):
                 # Original-to-target domain (use SWD instead of pure Wasserstein).
                 x_fake = self.G(x_real, c_trg)
                 num_samples = x_real.shape[0]
-                g_loss_fake = sliced_wasserstein_distance(
-                    x_real.view(num_samples, -1), x_fake.view(num_samples, -1),
-                    self.num_projections, self.device
-                )
 
-                out_src, out_cls = self.D(x_fake)
+                # if use discriminator with swd, need to:
+                # x_real -> D -> x_real_feature -> pass to swd
+                # x_fake -> D -> x_fake_feature -> pass to swd
+                # Transform samples using D if enabled
+                if self.use_d_feature:
+                    out_src, out_cls, h_fake = self.D(x_fake)
+                    print(out_src.shape, out_cls.shape, h_fake.shape)
+                    _, _, h_real = self.D(x_real)
+                else:
+                    out_src, out_cls = self.D(x_fake)
+
+                if self.use_d_feature:
+                    g_loss_fake = sliced_wasserstein_distance(
+                        h_real.view(num_samples, -1), h_fake.view(num_samples, -1),
+                        self.num_projections, self.device
+                    )
+                else:
+                    g_loss_fake = sliced_wasserstein_distance(
+                        x_real.view(num_samples, -1), x_fake.view(num_samples, -1),
+                        self.num_projections, self.device
+                    )
+
                 g_loss_cls = self.classification_loss(out_cls, label_trg, self.dataset)
 
                 # Target-to-original domain.

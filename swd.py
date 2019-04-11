@@ -38,6 +38,7 @@ def sliced_wasserstein_distance(true_samples, fake_samples, num_projections, dev
     # Get Wasserstein-2 distance averaged over samples and directions
     return torch.pow(sorted_true - sorted_fake, 2).mean()
 
+
 def max_sliced_wasserstein_distance(max_projected_true, max_projected_fake, device):
     """
     Before calling this func, pass true_samples and fake_samples to D and 
