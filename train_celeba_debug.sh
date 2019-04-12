@@ -8,8 +8,9 @@ SELECTED_ATTRS=("Blond_Hair" "Male" "Young")
 CUDA_DEVICE_NAME="cuda:0"
 RESUME_ITERS=11000  # 0 means not resume
 
-EXP_ROOT_DIR="stargan_celeba_sw_2"
+EXP_ROOT_DIR="stargan_debug"
 USE_SW_LOSS=True
+USE_D_FEATURE=True              # Compute SWD with D's features
 BATCH_SIZE=128
 NUM_ITERS=25000
 NUM_ITERS_DECAY=25000           # debug decay_learning_rates()
@@ -17,6 +18,7 @@ LR_UPDATE_STEP=10               # debug decay_learning_rates()
 NUM_PROJECTIONS=10000
 MODEL_SAVE_STEP=10              # debug save_checkpoints()
 SAMPLE_STEP=10                  # debug translate_samples()
+
 
 # Train
 python main.py \
@@ -41,4 +43,5 @@ python main.py \
 --model_save_step $MODEL_SAVE_STEP \
 --resume_iters $RESUME_ITERS \
 --sample_step $SAMPLE_STEP \
---lr_update_step $LR_UPDATE_STEP
+--lr_update_step $LR_UPDATE_STEP \
+--use_d_feature $USE_D_FEATURE
