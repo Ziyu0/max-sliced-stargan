@@ -88,16 +88,13 @@ class Discriminator(nn.Module):
 
 
         # TODO: return the second to last layer as features
-        # ~~don't need to add a use_discriminator param~~
         # UPDATE: pass a use_d_feature into the init
         # NOTE: compare it with the algorithm of max swd before actually chaning this D
-        # => also check shape of h (but this doesn't matter actually,
-        # we just need to reshape it as (num_samples, -1))
 
-        # out_src (N, 1, H, W)? may not be H=1, W=1
-        # TODO: SWG uses FC as the last layer -> check shape of out_src
-        # Does it matter if H!=1, W!=1? Do we need to change the conv1 to FC?
-        # => doesn't seem like it matters
+        # Tensors here are in shaoe (N, C, H, W)
+        # out_src (N, 1, 1, 1) => such as (128, 1, 1, 1)
+        # out_cls (N, c_dim) => such as (128, 3)
+        # h (N, 2048, 1, 1) => such as (128, 2048, 1, 1)
         
         if self.use_d_feature:
             return out_src, out_cls.view(out_cls.size(0), out_cls.size(1)), h

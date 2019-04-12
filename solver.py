@@ -558,7 +558,8 @@ class Solver(object):
                 # Transform samples using D if enabled
                 if self.use_d_feature:
                     out_src, out_cls, h_fake = self.D(x_fake)
-                    print(out_src.shape, out_cls.shape, h_fake.shape)
+                    # torch.Size([128, 1, 1, 1]) torch.Size([128, 3]) torch.Size([128, 2048, 1, 1])
+                    # print(out_src.shape, out_cls.shape, h_fake.shape)
                     _, _, h_real = self.D(x_real)
                 else:
                     out_src, out_cls = self.D(x_fake)
