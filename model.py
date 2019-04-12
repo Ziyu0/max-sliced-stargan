@@ -79,7 +79,7 @@ class Discriminator(nn.Module):
         self.conv1 = nn.Conv2d(curr_dim, 1, kernel_size=3, stride=1, padding=1, bias=False)
         self.conv2 = nn.Conv2d(curr_dim, c_dim, kernel_size=kernel_size, bias=False)
 
-        self.use_d_fearure = use_d_feature
+        self.use_d_feature = use_d_feature
         
     def forward(self, x):
         h = self.main(x)
