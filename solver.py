@@ -439,7 +439,7 @@ class Solver(object):
                 self.translate_samples(i, x_fixed, c_fixed_list)
 
             # Save model checkpoints.
-            if (i+1) % self.model_save_step == 0:
+            if (i+1) % self.model_save_step == 0 or (i+1) == self.num_iters:
                 self.save_checkpoints(i)
 
             # Decay learning rates.
@@ -606,7 +606,7 @@ class Solver(object):
                 self.translate_samples(i, x_fixed, c_fixed_list)
 
             # Save model checkpoints.
-            if (i+1) % self.model_save_step == 0:
+            if (i+1) % self.model_save_step == 0 or (i+1) == self.num_iters:
                 self.save_checkpoints(i)
             
             # Decay learning rates.
@@ -763,7 +763,7 @@ class Solver(object):
                                              zero_rafd, zero_celeba, mask_celeba, mask_rafd)
 
             # Save model checkpoints.
-            if (i+1) % self.model_save_step == 0:
+            if (i+1) % self.model_save_step == 0 or (i+1) == self.num_iters:
                 self.save_checkpoints(i)
 
             # Decay learning rates.
