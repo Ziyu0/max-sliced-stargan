@@ -7,16 +7,16 @@ N_CRITIC=1
 C_DIM=3
 SELECTED_ATTRS=("Blond_Hair" "Male" "Young")
 CUDA_DEVICE_NAME="cuda:1"
-RESUME_ITERS=0        # 0 means not resume
+RESUME_ITERS=0          # 0 means not resume
 
 EXP_ROOT_DIR="stargan_celeba_sw_d_1"
 USE_SW_LOSS=True
 USE_D_FEATURE=True
 BATCH_SIZE=128
 NUM_ITERS=25000
-NUM_ITERS_DECAY=0  # 0 means not decay, 5000 means LR will be decayed in the last 5000 iters
+NUM_ITERS_DECAY=0       # 0 means not decay, 5000 means LR will be decayed in the last 5000 iters
 NUM_PROJECTIONS=10000
-MODEL_SAVE_STEP=2000
+MODEL_SAVE_STEP=10000   # One ckpt is about ~200M, so don't save too many ckpts
 
 
 # Train

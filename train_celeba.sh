@@ -13,7 +13,7 @@ USE_SW_LOSS=False
 BATCH_SIZE=16
 NUM_ITERS=200000
 NUM_ITERS_DECAY=100000  # 0 means not decay, 5000 means LR will be decayed in the last 5000 iters
-MODEL_SAVE_STEP=20000
+MODEL_SAVE_STEP=100000  # One ckpt is about ~200M, so don't save too many ckpts
 
 
 # Train

@@ -14,7 +14,7 @@ BATCH_SIZE=128
 NUM_ITERS=10000
 NUM_ITERS_DECAY=5000  # 0 means not decay, 5000 means LR will be decayed in the last 5000 iters
 NUM_PROJECTIONS=10000
-MODEL_SAVE_STEP=1000
+MODEL_SAVE_STEP=5000  # One ckpt is about ~200M, so don't save too many ckpts
 
 
 # Train
