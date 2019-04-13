@@ -6,7 +6,7 @@ N_CRITIC=5
 C_DIM=3
 SELECTED_ATTRS=("Blond_Hair" "Male" "Young")
 CUDA_DEVICE_NAME="cuda:0"
-RESUME_ITERS=11000  # 0 means not resume
+RESUME_ITERS=0  # 0 means not resume
 
 EXP_ROOT_DIR="stargan_debug"
 USE_SW_LOSS=True
