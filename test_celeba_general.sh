@@ -1,7 +1,7 @@
 #!/bin/bash
 
 DATASET="CelebA"
-IMAGE_SIZE=64
+IMAGE_SIZE=64                       # Must be the same size when you train it
 C_DIM=3
 SELECTED_ATTRS=("Blond_Hair" "Male" "Young")
 CUDA_DEVICE_NAME="cuda:1"
