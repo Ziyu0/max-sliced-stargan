@@ -104,3 +104,13 @@ class Discriminator(nn.Module):
 
 
 # TODO: define a new D for max swd, whose last layer is a FC layer
+class MaxDiscriminator(nn.Module):
+    """Discriminator network with PatchGAN."""
+    def __init__(self, image_size=128, conv_dim=64, c_dim=5, repeat_num=6):
+        super(Discriminator, self).__init__()
+
+        # Need a FC layer at the end
+        pass
+        
+    def forward(self, x):
+        pass
