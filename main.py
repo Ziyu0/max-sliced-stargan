@@ -25,11 +25,6 @@ def main(config):
         os.makedirs(config.config_dir)
     if not os.path.exists(config.progress_dir):
         os.makedirs(config.progress_dir)
-    
-    # Save configs to file
-    with open(config.config_dir + '/configs.txt', 'w') as file:
-        for arg in vars(config):
-            file.write("{}: {}\n".format(arg, getattr(config, arg)))
 
     # Data loader.
     celeba_loader = None
@@ -130,4 +125,11 @@ if __name__ == '__main__':
 
     config = parser.parse_args()
     print(config)
+
+    # Save configs to file
+    with open(config.config_dir + '/configs.txt', 'w') as file:
+        for arg in vars(config):
+            file.write("{}: {}\n".format(arg, getattr(config, arg)))
+
+    # Execute
     main(config)
