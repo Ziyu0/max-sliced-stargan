@@ -12,8 +12,8 @@ from model import Discriminator, Generator
 from swd import sliced_wasserstein_distance
 
 
-class Solver(object):
-    """Solver for training and testing StarGAN."""
+class Trainer(object):
+    """Trainer for training and testing StarGAN."""
 
     def __init__(self, celeba_loader, rafd_loader, config):
         """Initialize configurations."""

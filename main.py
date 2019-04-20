@@ -1,6 +1,6 @@
 import os
 import argparse
-from solver import Solver
+from trainer import Trainer
 from data_loader import get_loader
 from torch.backends import cudnn
 
@@ -40,24 +40,24 @@ def main(config):
                                  'RaFD', config.mode, config.num_workers)
     
 
-    # Solver for training and testing StarGAN.
-    solver = Solver(celeba_loader, rafd_loader, config)
+    # Trainer for training and testing StarGAN.
+    trainer = Trainer(celeba_loader, rafd_loader, config)
 
     if config.mode == 'train':
         if config.dataset in ['CelebA', 'RaFD']:
             if config.use_sw_loss:
                 # Currently only training on single dataset supports sw loss
                 # TODO: enable sw loss for 'Both' dataset
-                solver.train_sw_loss()
+                trainer.train_sw_loss()
             else:
-                solver.train()
+                trainer.train()
         elif config.dataset in ['Both']:
-            solver.train_multi()
+            trainer.train_multi()
     elif config.mode == 'test':
         if config.dataset in ['CelebA', 'RaFD']:
-            solver.test()
+            trainer.test()
         elif config.dataset in ['Both']:
-            solver.test_multi()
+            trainer.test_multi()
 
 
 if __name__ == '__main__':
