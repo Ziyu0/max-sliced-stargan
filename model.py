@@ -95,22 +95,11 @@ class Discriminator(nn.Module):
         # out_src (N, 1, 1, 1) => such as (128, 1, 1, 1)
         # out_cls (N, c_dim) => such as (128, 3)
         # h (N, 2048, 1, 1) => such as (128, 2048, 1, 1)
+
+        # TODO: use h for max SWD
         
         if self.use_d_feature:
             return out_src, out_cls.view(out_cls.size(0), out_cls.size(1)), h
         else:
             # Reshape out_cls from (N, c_dim, 1, 1) to (N, c_dim)
             return out_src, out_cls.view(out_cls.size(0), out_cls.size(1))
-
-
-# TODO: define a new D for max swd, whose last layer is a FC layer
-class MaxDiscriminator(nn.Module):
-    """Discriminator network with PatchGAN."""
-    def __init__(self, image_size=128, conv_dim=64, c_dim=5, repeat_num=6):
-        super(MaxDiscriminator, self).__init__()
-
-        # Need a FC layer at the end
-        pass
-        
-    def forward(self, x):
-        pass
