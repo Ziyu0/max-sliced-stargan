@@ -309,6 +309,27 @@ class Trainer(object):
         return g_lr, d_lr
 
 
+    def _train_D_wasserstein_GP(self):
+        """Train discriminator using wasserstein distance with gradient penalty."""
+        pass
+    
+    def _train_D_BCE(self):
+        """Train discriminator using binary cross entropy loss."""
+        pass
+    
+    def _train_G_wasserstein(self):
+        """Train generator using wasserstein distance."""
+        pass
+    
+    def _train_G_sliced_wasserstein(self):
+        """Train generator using sliced wasserstein distance."""
+        pass
+    
+    def _train_G_max_sliced_wasserstein(self):
+        """Train generator using max sliced wasserstein distance."""
+        pass
+
+
     def train(self):
         """Train StarGAN within a single dataset."""
         # Set data loader.
