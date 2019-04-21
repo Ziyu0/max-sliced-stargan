@@ -45,11 +45,6 @@ def main(config):
 
     if config.mode == 'train':
         if config.dataset in ['CelebA', 'RaFD']:
-            if config.use_sw_loss:
-                # Currently only training on single dataset supports sw loss
-                # TODO: enable sw loss for 'Both' dataset
-                trainer.train_sw_loss()
-            else:
                 trainer.train()
         elif config.dataset in ['Both']:
             trainer.train_multi()
