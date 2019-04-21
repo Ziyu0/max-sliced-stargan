@@ -53,6 +53,9 @@ class Trainer(object):
         self.num_projections = config.num_projections if self.use_sw_loss else 0
         self.use_d_feature = config.use_d_feature
 
+        # Training configuration for max sliced wasserstein loss.
+        self.use_max_sw_loss = config.use_max_sw_loss
+
         # Test configurations.
         self.test_iters = config.test_iters
 
@@ -308,27 +311,239 @@ class Trainer(object):
 
         return g_lr, d_lr
 
+    def _train_D_wasserstein_GP(self, data):
+        """[For original StarGAN objective] 
+        Train discriminator using wasserstein distance with gradient penalty.
+        
+        Args:
+            data(dict): Dict containing image and label data, namely:
+                x_real(tensor): Input images
+                c_org(tensor):
+                c_trg(tensor): Target domain labels
+                label_org(tensor): Labels for computing classification loss
+                label_trg(tensor): Labels for computing classification loss
+        Returns:
+            loss(dict): Dict containing loss of the current step for tensorboard logging
+        """
 
-    def _train_D_wasserstein_GP(self):
-        """Train discriminator using wasserstein distance with gradient penalty."""
-        pass
-    
-    def _train_D_BCE(self):
-        """Train discriminator using binary cross entropy loss."""
-        pass
-    
-    def _train_G_wasserstein(self):
-        """Train generator using wasserstein distance."""
-        pass
-    
-    def _train_G_sliced_wasserstein(self):
-        """Train generator using sliced wasserstein distance."""
-        pass
-    
-    def _train_G_max_sliced_wasserstein(self):
-        """Train generator using max sliced wasserstein distance."""
-        pass
+        # Unpack the data
+        x_real = data['x_real']
+        c_trg = data['c_trg']
+        label_org = data['label_org']
 
+        # Compute loss with real images.
+        out_src, out_cls = self.D(x_real)
+        d_loss_real = - torch.mean(out_src)
+        d_loss_cls = self.classification_loss(out_cls, label_org, self.dataset)
+
+        # Compute loss with fake images.
+        x_fake = self.G(x_real, c_trg)
+        out_src, out_cls = self.D(x_fake.detach())
+        d_loss_fake = torch.mean(out_src)
+
+        # Compute loss for gradient penalty.
+        alpha = torch.rand(x_real.size(0), 1, 1, 1).to(self.device)
+        x_hat = (alpha * x_real.data + (1 - alpha) * x_fake.data).requires_grad_(True)
+        out_src, _ = self.D(x_hat)
+        d_loss_gp = self.gradient_penalty(out_src, x_hat)
+
+        # Backward and optimize.
+        d_loss = d_loss_real + d_loss_fake + self.lambda_cls * d_loss_cls + self.lambda_gp * d_loss_gp
+        self.reset_grad()
+        d_loss.backward()
+        self.d_optimizer.step()
+
+        # Logging.
+        loss = {}
+        loss['D/loss_real'] = d_loss_real.item()
+        loss['D/loss_fake'] = d_loss_fake.item()
+        loss['D/loss_cls'] = d_loss_cls.item()
+        loss['D/loss_gp'] = d_loss_gp.item()
+
+        return loss
+    
+    def _train_G_wasserstein(self, data):
+        """[For original StarGAN objective] 
+        Train generator using wasserstein distance (along with discriminator's wasserstein
+        distance with gradient penalty to form the WGAN-GP objective).
+        """
+
+        # Unpack the data
+        x_real = data['x_real']
+        c_org = data['c_org']
+        c_trg = data['c_trg']
+        label_trg = data['label_trg']
+
+        # Original-to-target domain.
+        x_fake = self.G(x_real, c_trg)
+        out_src, out_cls = self.D(x_fake)
+        g_loss_fake = - torch.mean(out_src)
+        g_loss_cls = self.classification_loss(out_cls, label_trg, self.dataset)
+
+        # Target-to-original domain.
+        x_reconst = self.G(x_fake, c_org)
+        g_loss_rec = torch.mean(torch.abs(x_real - x_reconst))
+
+        # Backward and optimize.
+        g_loss = g_loss_fake + self.lambda_rec * g_loss_rec + self.lambda_cls * g_loss_cls
+        self.reset_grad()
+        g_loss.backward()
+        self.g_optimizer.step()
+
+        # Logging.
+        loss = {}
+        loss['G/loss_fake'] = g_loss_fake.item()
+        loss['G/loss_rec'] = g_loss_rec.item()
+        loss['G/loss_cls'] = g_loss_cls.item()
+        
+        return loss
+    
+    def _train_D_BCE(self, data):
+        """[For SWD or max-SWD]
+        Train discriminator using binary cross entropy loss. The discriminator will output 
+        additional features along with the out_src and out_cls if use_d_feature is enbaled.
+        """
+        # Unpack the data
+        x_real = data['x_real']
+        c_trg = data['c_trg']
+        label_org = data['label_org']
+        
+        # Compute loss with real images
+        outputs = self.D(x_real)
+        assert (len(outputs) == 3 and self.use_d_feature) or (len(outputs) == 2 and not self.use_d_feature)
+        
+        out_src, out_cls = outputs[0], outputs[1]
+        d_loss_real = F.binary_cross_entropy_with_logits(out_src, torch.ones_like(out_src))
+        d_loss_cls = self.classification_loss(out_cls, label_org, self.dataset)
+
+        # Compute loss with fake images
+        x_fake = self.G(x_real, c_trg)
+        outputs = self.D(x_fake.detach())
+        assert (len(outputs) == 3 and self.use_d_feature) or (len(outputs) == 2 and not self.use_d_feature)
+        out_src, out_cls = outputs[0], outputs[1]
+
+        d_loss_fake = F.binary_cross_entropy_with_logits(out_src, torch.zeros_like(out_src))
+
+        # Backward and optimize.
+        d_loss = d_loss_real + d_loss_fake + self.lambda_cls * d_loss_cls
+        self.reset_grad()
+        d_loss.backward()
+        self.d_optimizer.step()
+
+        # Logging.
+        loss = {}
+        loss['D/loss_real'] = d_loss_real.item()
+        loss['D/loss_fake'] = d_loss_fake.item()
+        loss['D/loss_cls'] = d_loss_cls.item()
+
+        return loss
+    
+    def _train_G_sliced_wasserstein(self, data):
+        """[For SWD]
+        Train generator using sliced wasserstein distance (along with discriminator's BCE loss
+        to form the objective). The discriminator will output additional features along with the 
+        out_src and out_cls if use_d_feature is enbaled
+        """
+
+        # Unpack the data
+        x_real = data['x_real']
+        c_org = data['c_org']
+        c_trg = data['c_trg']
+        label_trg = data['label_trg']
+        
+        # Original-to-target domain
+        x_fake = self.G(x_real, c_trg)
+        num_samples = x_real.shape[0]
+
+        outputs = self.D(x_fake)
+
+        if self.use_d_feature:
+            assert len(outputs) == 3
+            out_src, out_cls, h_fake = outputs
+            _, _, h_real = self.D(x_real)
+
+            g_loss_fake = sliced_wasserstein_distance(
+                h_real.view(num_samples, -1), h_fake.view(num_samples, -1),
+                self.num_projections, self.device
+            )
+        else:
+            assert len(outputs) == 2
+            out_src, out_cls = outputs
+            g_loss_fake = sliced_wasserstein_distance(
+                x_real.view(num_samples, -1), x_fake.view(num_samples, -1),
+                self.num_projections, self.device
+            )
+        
+        g_loss_cls = self.classification_loss(out_cls, label_trg, self.dataset)
+        
+        # Target-to-original domain.
+        x_reconst = self.G(x_fake, c_org)
+        g_loss_rec = torch.mean(torch.abs(x_real - x_reconst))
+
+        # Backward and optimize.
+        g_loss = g_loss_fake + self.lambda_rec * g_loss_rec + self.lambda_cls * g_loss_cls
+        self.reset_grad()
+        g_loss.backward()
+        self.g_optimizer.step()
+
+        # Logging.
+        loss = {}
+        loss['G/loss_fake'] = g_loss_fake.item()
+        loss['G/loss_rec'] = g_loss_rec.item()
+        loss['G/loss_cls'] = g_loss_cls.item()
+
+        return loss
+    
+    def _train_G_max_sliced_wasserstein(self, data):
+        """[For max-SWD]
+        Train generator using max sliced wasserstein distance."""
+        
+        # Unpack the data
+        x_real = data['x_real']
+        c_org = data['c_org']
+        c_trg = data['c_trg']
+        label_trg = data['label_trg']
+
+        # TODO: Finish this
+
+    def load_training_method(self):
+        """Load the correct methods to train the discriminator and generator based on the 
+        training configs use_sw_loss and use_max_sw_loss. If both are set to false, then
+        the original method of the StarGAN paper will be loaded.
+        
+        Returns:
+            methods(dict): Dict containing functions to train D and G
+        """
+
+        original, swd, max_swd = 'original', 'SWD', 'max-SWD'
+
+        d_method = {
+            original: self._train_D_wasserstein_GP,
+            swd: self._train_D_BCE,
+            max_swd: self._train_D_BCE
+        }
+
+        g_method = {
+            original: self._train_G_wasserstein,
+            swd: self._train_G_sliced_wasserstein,
+            max_swd: self._train_G_max_sliced_wasserstein
+        }
+
+        # Choose the correct method to train D and G
+        if self.use_sw_loss:
+            d_method_name = g_method_name = swd
+        elif self.use_max_sw_loss:
+            d_method_name = g_method_name = max_swd
+        else:
+            d_method_name = g_method_name = original
+
+        methods = {
+            'train_D': d_method[d_method_name],
+            'train_G': g_method[g_method_name]
+        }
+
+        return methods
+        
 
     def train(self):
         """Train StarGAN within a single dataset."""
@@ -353,15 +568,17 @@ class Trainer(object):
         if self.resume_iters:
             start_iters = self.resume_iters
             self.restore_model(self.resume_iters)
+        
+        # Load the correct training method
+        methods = self.load_training_method()
 
         # Start training.
         print('Start training...')
         start_time = time.time()
+
         for i in range(start_iters, self.num_iters):
 
-            # =================================================================================== #
-            #                             1. Preprocess input data                                #
-            # =================================================================================== #
+            # =========================== 1. Preprocess input data ============================== #
 
             # Fetch real images and labels.
             try:
@@ -387,252 +604,352 @@ class Trainer(object):
             label_org = label_org.to(self.device)     # Labels for computing classification loss.
             label_trg = label_trg.to(self.device)     # Labels for computing classification loss.
 
-            # =================================================================================== #
-            #                             2. Train the discriminator                              #
-            # =================================================================================== #
+            # Pack the data for the training methods
+            data = {
+                'x_real': x_real,
+                'c_org': c_org,
+                'c_trg': c_trg,
+                'label_org': label_org,
+                'label_trg': label_trg
+            }
 
-            # Compute loss with real images.
-            out_src, out_cls = self.D(x_real)
-            d_loss_real = - torch.mean(out_src)
-            d_loss_cls = self.classification_loss(out_cls, label_org, self.dataset)
+            # =================================== 2. Training =================================== #
 
-            # Compute loss with fake images.
-            x_fake = self.G(x_real, c_trg)
-            out_src, out_cls = self.D(x_fake.detach())
-            d_loss_fake = torch.mean(out_src)
-
-            # Compute loss for gradient penalty.
-            alpha = torch.rand(x_real.size(0), 1, 1, 1).to(self.device)
-            x_hat = (alpha * x_real.data + (1 - alpha) * x_fake.data).requires_grad_(True)
-            out_src, _ = self.D(x_hat)
-            d_loss_gp = self.gradient_penalty(out_src, x_hat)
-
-            # Backward and optimize.
-            d_loss = d_loss_real + d_loss_fake + self.lambda_cls * d_loss_cls + self.lambda_gp * d_loss_gp
-            self.reset_grad()
-            d_loss.backward()
-            self.d_optimizer.step()
-
-            # Logging.
+            # For logging the loss.
             loss = {}
-            loss['D/loss_real'] = d_loss_real.item()
-            loss['D/loss_fake'] = d_loss_fake.item()
-            loss['D/loss_cls'] = d_loss_cls.item()
-            loss['D/loss_gp'] = d_loss_gp.item()
-            
-            # =================================================================================== #
-            #                               3. Train the generator                                #
-            # =================================================================================== #
-            
-            if (i+1) % self.n_critic == 0:
-                # Original-to-target domain.
-                x_fake = self.G(x_real, c_trg)
-                out_src, out_cls = self.D(x_fake)
-                g_loss_fake = - torch.mean(out_src)
-                g_loss_cls = self.classification_loss(out_cls, label_trg, self.dataset)
 
-                # Target-to-original domain.
-                x_reconst = self.G(x_fake, c_org)
-                g_loss_rec = torch.mean(torch.abs(x_real - x_reconst))
+            # Train the discriminator
+            d_loss = methods['train_D'](data)
+            loss.update(d_loss)
 
-                # Backward and optimize.
-                g_loss = g_loss_fake + self.lambda_rec * g_loss_rec + self.lambda_cls * g_loss_cls
-                self.reset_grad()
-                g_loss.backward()
-                self.g_optimizer.step()
+            # Train the generator 
+            if (i + 1) % self.n_critic == 0:
+                g_loss = methods['train_G'](data)
+                loss.update(g_loss)
 
-                # Logging.
-                loss['G/loss_fake'] = g_loss_fake.item()
-                loss['G/loss_rec'] = g_loss_rec.item()
-                loss['G/loss_cls'] = g_loss_cls.item()
-
-            # =================================================================================== #
-            #                                 4. Miscellaneous                                    #
-            # =================================================================================== #
+            # =============================== 3. Miscellaneous ================================== #
 
             # Print out training information.
-            if (i+1) % self.log_step == 0:
+            if (i + 1) % self.log_step == 0:
                 et = time.time() - start_time  ### Pass this et to log_training_info
                 self.log_training_info(et, loss, i)
 
             # Translate fixed images for debugging.
-            if (i+1) % self.sample_step == 0:
+            if (i + 1) % self.sample_step == 0:
                 self.translate_samples(i, x_fixed, c_fixed_list)
 
             # Save model checkpoints.
-            if (i+1) % self.model_save_step == 0 or (i+1) == self.num_iters:
+            if (i + 1) % self.model_save_step == 0 or (i+1) == self.num_iters:
                 self.save_checkpoints(i)
 
             # Decay learning rates.
-            if (i+1) % self.lr_update_step == 0 and (i+1) > (self.num_iters - self.num_iters_decay):
+            if (i + 1) % self.lr_update_step == 0 and (i+1) > (self.num_iters - self.num_iters_decay):
                 g_lr, d_lr = self.decay_learning_rates(g_lr, d_lr)
 
-    def train_sw_loss(self):
-        """Train StarGAN within a single dataset using Sliced Wasserstein Distance."""
-        # Set data loader.
-        if self.dataset == 'CelebA':
-            data_loader = self.celeba_loader
-        elif self.dataset == 'RaFD':
-            data_loader = self.rafd_loader
 
-        # Fetch fixed inputs for debugging.
-        data_iter = iter(data_loader)
-        x_fixed, c_org = next(data_iter)
-        x_fixed = x_fixed.to(self.device)
-        c_fixed_list = self.create_labels(c_org, self.c_dim, self.dataset, self.selected_attrs)
+    # def train(self):
+    #     """Train StarGAN within a single dataset."""
+    #     # Set data loader.
+    #     if self.dataset == 'CelebA':
+    #         data_loader = self.celeba_loader
+    #     elif self.dataset == 'RaFD':
+    #         data_loader = self.rafd_loader
 
-        # Learning rate cache for decaying.
-        g_lr = self.g_lr
-        d_lr = self.d_lr
+    #     # Fetch fixed inputs for debugging.
+    #     data_iter = iter(data_loader)
+    #     x_fixed, c_org = next(data_iter)
+    #     x_fixed = x_fixed.to(self.device)
+    #     c_fixed_list = self.create_labels(c_org, self.c_dim, self.dataset, self.selected_attrs)
 
-        # Start training from scratch or resume training.
-        start_iters = 0
-        if self.resume_iters:
-            start_iters = self.resume_iters
-            self.restore_model(self.resume_iters)
+    #     # Learning rate cache for decaying.
+    #     g_lr = self.g_lr
+    #     d_lr = self.d_lr
 
-        # Start training.
-        print('Start training using SWD on {} dataset...'.format(self.dataset))
-        start_time = time.time()
-        for i in range(start_iters, self.num_iters):
+    #     # Start training from scratch or resume training.
+    #     start_iters = 0
+    #     if self.resume_iters:
+    #         start_iters = self.resume_iters
+    #         self.restore_model(self.resume_iters)
 
-            # =================================================================================== #
-            #                             1. Preprocess input data                                #
-            # =================================================================================== #
+    #     # Start training.
+    #     print('Start training...')
+    #     start_time = time.time()
+    #     for i in range(start_iters, self.num_iters):
 
-            # Fetch real images and labels.
-            try:
-                x_real, label_org = next(data_iter)
-            except:
-                data_iter = iter(data_loader)
-                x_real, label_org = next(data_iter)
+    #         # =================================================================================== #
+    #         #                             1. Preprocess input data                                #
+    #         # =================================================================================== #
 
-            # Generate target domain labels randomly.
-            rand_idx = torch.randperm(label_org.size(0))
-            label_trg = label_org[rand_idx]
+    #         # Fetch real images and labels.
+    #         try:
+    #             x_real, label_org = next(data_iter)
+    #         except:
+    #             data_iter = iter(data_loader)
+    #             x_real, label_org = next(data_iter)
 
-            if self.dataset == 'CelebA':
-                c_org = label_org.clone()
-                c_trg = label_trg.clone()
-            elif self.dataset == 'RaFD':
-                c_org = self.label2onehot(label_org, self.c_dim)
-                c_trg = self.label2onehot(label_trg, self.c_dim)
+    #         # Generate target domain labels randomly.
+    #         rand_idx = torch.randperm(label_org.size(0))
+    #         label_trg = label_org[rand_idx]
 
-            x_real = x_real.to(self.device)           # Input images.
-            c_org = c_org.to(self.device)             # Original domain labels.
-            c_trg = c_trg.to(self.device)             # Target domain labels.
-            label_org = label_org.to(self.device)     # Labels for computing classification loss.
-            label_trg = label_trg.to(self.device)     # Labels for computing classification loss.
+    #         if self.dataset == 'CelebA':
+    #             c_org = label_org.clone()
+    #             c_trg = label_trg.clone()
+    #         elif self.dataset == 'RaFD':
+    #             c_org = self.label2onehot(label_org, self.c_dim)
+    #             c_trg = self.label2onehot(label_trg, self.c_dim)
 
-            # =================================================================================== #
-            #                             2. Train the discriminator                              #
-            # =================================================================================== #
+    #         x_real = x_real.to(self.device)           # Input images.
+    #         c_org = c_org.to(self.device)             # Original domain labels.
+    #         c_trg = c_trg.to(self.device)             # Target domain labels.
+    #         label_org = label_org.to(self.device)     # Labels for computing classification loss.
+    #         label_trg = label_trg.to(self.device)     # Labels for computing classification loss.
+
+    #         # =================================================================================== #
+    #         #                             2. Train the discriminator                              #
+    #         # =================================================================================== #
+
+    #         # Compute loss with real images.
+    #         out_src, out_cls = self.D(x_real)
+    #         d_loss_real = - torch.mean(out_src)
+    #         d_loss_cls = self.classification_loss(out_cls, label_org, self.dataset)
+
+    #         # Compute loss with fake images.
+    #         x_fake = self.G(x_real, c_trg)
+    #         out_src, out_cls = self.D(x_fake.detach())
+    #         d_loss_fake = torch.mean(out_src)
+
+    #         # Compute loss for gradient penalty.
+    #         alpha = torch.rand(x_real.size(0), 1, 1, 1).to(self.device)
+    #         x_hat = (alpha * x_real.data + (1 - alpha) * x_fake.data).requires_grad_(True)
+    #         out_src, _ = self.D(x_hat)
+    #         d_loss_gp = self.gradient_penalty(out_src, x_hat)
+
+    #         # Backward and optimize.
+    #         d_loss = d_loss_real + d_loss_fake + self.lambda_cls * d_loss_cls + self.lambda_gp * d_loss_gp
+    #         self.reset_grad()
+    #         d_loss.backward()
+    #         self.d_optimizer.step()
+
+    #         # Logging.
+    #         loss = {}
+    #         loss['D/loss_real'] = d_loss_real.item()
+    #         loss['D/loss_fake'] = d_loss_fake.item()
+    #         loss['D/loss_cls'] = d_loss_cls.item()
+    #         loss['D/loss_gp'] = d_loss_gp.item()
             
-            # TODO: add a return value of the features for self.D everytime we use it
-
-            # Compute loss with real images (use Cross Entropy instead of Wasserstein-GP).
-            if self.use_d_feature:
-                out_src, out_cls, _ = self.D(x_real)
-            else:
-                out_src, out_cls = self.D(x_real)
-
-            # TODO: Do I need to change this?
-            d_loss_real = F.binary_cross_entropy_with_logits(out_src, torch.ones_like(out_src))
-
-            d_loss_cls = self.classification_loss(out_cls, label_org, self.dataset)
-
-            # Compute loss with fake images (use Cross Entropy instead of Wasserstein-GP).
-            x_fake = self.G(x_real, c_trg)
-
-            if self.use_d_feature:
-                out_src, out_cls, _ = self.D(x_fake.detach())  # detach to avoid training G on these labels
-            else:
-                out_src, out_cls = self.D(x_fake.detach())
-
-            d_loss_fake = F.binary_cross_entropy_with_logits(out_src, torch.zeros_like(out_src))
-
-            # Backward and optimize.
-            d_loss = d_loss_real + d_loss_fake + self.lambda_cls * d_loss_cls
-            self.reset_grad()
-            d_loss.backward()
-            self.d_optimizer.step()
-
-            # Logging.
-            loss = {}
-            loss['D/loss_real'] = d_loss_real.item()
-            loss['D/loss_fake'] = d_loss_fake.item()
-            loss['D/loss_cls'] = d_loss_cls.item()
-            # loss['D/loss_gp'] = d_loss_gp.item()
+    #         # =================================================================================== #
+    #         #                               3. Train the generator                                #
+    #         # =================================================================================== #
             
-            # =================================================================================== #
-            #                               3. Train the generator                                #
-            # =================================================================================== #
+    #         if (i+1) % self.n_critic == 0:
+    #             # Original-to-target domain.
+    #             x_fake = self.G(x_real, c_trg)
+    #             out_src, out_cls = self.D(x_fake)
+    #             g_loss_fake = - torch.mean(out_src)
+    #             g_loss_cls = self.classification_loss(out_cls, label_trg, self.dataset)
+
+    #             # Target-to-original domain.
+    #             x_reconst = self.G(x_fake, c_org)
+    #             g_loss_rec = torch.mean(torch.abs(x_real - x_reconst))
+
+    #             # Backward and optimize.
+    #             g_loss = g_loss_fake + self.lambda_rec * g_loss_rec + self.lambda_cls * g_loss_cls
+    #             self.reset_grad()
+    #             g_loss.backward()
+    #             self.g_optimizer.step()
+
+    #             # Logging.
+    #             loss['G/loss_fake'] = g_loss_fake.item()
+    #             loss['G/loss_rec'] = g_loss_rec.item()
+    #             loss['G/loss_cls'] = g_loss_cls.item()
+
+    #         # =================================================================================== #
+    #         #                                 4. Miscellaneous                                    #
+    #         # =================================================================================== #
+
+    #         # Print out training information.
+    #         if (i+1) % self.log_step == 0:
+    #             et = time.time() - start_time  ### Pass this et to log_training_info
+    #             self.log_training_info(et, loss, i)
+
+    #         # Translate fixed images for debugging.
+    #         if (i+1) % self.sample_step == 0:
+    #             self.translate_samples(i, x_fixed, c_fixed_list)
+
+    #         # Save model checkpoints.
+    #         if (i+1) % self.model_save_step == 0 or (i+1) == self.num_iters:
+    #             self.save_checkpoints(i)
+
+    #         # Decay learning rates.
+    #         if (i+1) % self.lr_update_step == 0 and (i+1) > (self.num_iters - self.num_iters_decay):
+    #             g_lr, d_lr = self.decay_learning_rates(g_lr, d_lr)
+
+    # def train_sw_loss(self):
+    #     """Train StarGAN within a single dataset using Sliced Wasserstein Distance."""
+    #     # Set data loader.
+    #     if self.dataset == 'CelebA':
+    #         data_loader = self.celeba_loader
+    #     elif self.dataset == 'RaFD':
+    #         data_loader = self.rafd_loader
+
+    #     # Fetch fixed inputs for debugging.
+    #     data_iter = iter(data_loader)
+    #     x_fixed, c_org = next(data_iter)
+    #     x_fixed = x_fixed.to(self.device)
+    #     c_fixed_list = self.create_labels(c_org, self.c_dim, self.dataset, self.selected_attrs)
+
+    #     # Learning rate cache for decaying.
+    #     g_lr = self.g_lr
+    #     d_lr = self.d_lr
+
+    #     # Start training from scratch or resume training.
+    #     start_iters = 0
+    #     if self.resume_iters:
+    #         start_iters = self.resume_iters
+    #         self.restore_model(self.resume_iters)
+
+    #     # Start training.
+    #     print('Start training using SWD on {} dataset...'.format(self.dataset))
+    #     start_time = time.time()
+    #     for i in range(start_iters, self.num_iters):
+
+    #         # =================================================================================== #
+    #         #                             1. Preprocess input data                                #
+    #         # =================================================================================== #
+
+    #         # Fetch real images and labels.
+    #         try:
+    #             x_real, label_org = next(data_iter)
+    #         except:
+    #             data_iter = iter(data_loader)
+    #             x_real, label_org = next(data_iter)
+
+    #         # Generate target domain labels randomly.
+    #         rand_idx = torch.randperm(label_org.size(0))
+    #         label_trg = label_org[rand_idx]
+
+    #         if self.dataset == 'CelebA':
+    #             c_org = label_org.clone()
+    #             c_trg = label_trg.clone()
+    #         elif self.dataset == 'RaFD':
+    #             c_org = self.label2onehot(label_org, self.c_dim)
+    #             c_trg = self.label2onehot(label_trg, self.c_dim)
+
+    #         x_real = x_real.to(self.device)           # Input images.
+    #         c_org = c_org.to(self.device)             # Original domain labels.
+    #         c_trg = c_trg.to(self.device)             # Target domain labels.
+    #         label_org = label_org.to(self.device)     # Labels for computing classification loss.
+    #         label_trg = label_trg.to(self.device)     # Labels for computing classification loss.
+
+    #         # =================================================================================== #
+    #         #                             2. Train the discriminator                              #
+    #         # =================================================================================== #
             
-            if (i+1) % self.n_critic == 0:
-                # Original-to-target domain (use SWD instead of pure Wasserstein).
-                x_fake = self.G(x_real, c_trg)
-                num_samples = x_real.shape[0]
+    #         # TODO: add a return value of the features for self.D everytime we use it
 
-                # if use discriminator with swd, need to:
-                # x_real -> D -> x_real_feature -> pass to swd
-                # x_fake -> D -> x_fake_feature -> pass to swd
-                # Transform samples using D if enabled
-                if self.use_d_feature:
-                    out_src, out_cls, h_fake = self.D(x_fake)
-                    # torch.Size([128, 1, 1, 1]) torch.Size([128, 3]) torch.Size([128, 2048, 1, 1])
-                    # print(out_src.shape, out_cls.shape, h_fake.shape)
-                    _, _, h_real = self.D(x_real)
-                else:
-                    out_src, out_cls = self.D(x_fake)
+    #         # Compute loss with real images (use Cross Entropy instead of Wasserstein-GP).
+    #         if self.use_d_feature:
+    #             out_src, out_cls, _ = self.D(x_real)
+    #         else:
+    #             out_src, out_cls = self.D(x_real)
 
-                if self.use_d_feature:
-                    g_loss_fake = sliced_wasserstein_distance(
-                        h_real.view(num_samples, -1), h_fake.view(num_samples, -1),
-                        self.num_projections, self.device
-                    )
-                else:
-                    g_loss_fake = sliced_wasserstein_distance(
-                        x_real.view(num_samples, -1), x_fake.view(num_samples, -1),
-                        self.num_projections, self.device
-                    )
+    #         # TODO: Do I need to change this?
+    #         d_loss_real = F.binary_cross_entropy_with_logits(out_src, torch.ones_like(out_src))
 
-                g_loss_cls = self.classification_loss(out_cls, label_trg, self.dataset)
+    #         d_loss_cls = self.classification_loss(out_cls, label_org, self.dataset)
 
-                # Target-to-original domain.
-                x_reconst = self.G(x_fake, c_org)
-                g_loss_rec = torch.mean(torch.abs(x_real - x_reconst))
+    #         # Compute loss with fake images (use Cross Entropy instead of Wasserstein-GP).
+    #         x_fake = self.G(x_real, c_trg)
 
-                # Backward and optimize.
-                g_loss = g_loss_fake + self.lambda_rec * g_loss_rec + self.lambda_cls * g_loss_cls
-                self.reset_grad()
-                g_loss.backward()
-                self.g_optimizer.step()
+    #         if self.use_d_feature:
+    #             out_src, out_cls, _ = self.D(x_fake.detach())  # detach to avoid training G on these labels
+    #         else:
+    #             out_src, out_cls = self.D(x_fake.detach())
 
-                # Logging.
-                loss['G/loss_fake'] = g_loss_fake.item()
-                loss['G/loss_rec'] = g_loss_rec.item()
-                loss['G/loss_cls'] = g_loss_cls.item()
+    #         d_loss_fake = F.binary_cross_entropy_with_logits(out_src, torch.zeros_like(out_src))
 
-            # =================================================================================== #
-            #                                 4. Miscellaneous                                    #
-            # =================================================================================== #
+    #         # Backward and optimize.
+    #         d_loss = d_loss_real + d_loss_fake + self.lambda_cls * d_loss_cls
+    #         self.reset_grad()
+    #         d_loss.backward()
+    #         self.d_optimizer.step()
 
-            # Print out training information.
-            if (i+1) % self.log_step == 0:
-                et = time.time() - start_time  ### Pass this et to log_training_info
-                self.log_training_info(et, loss, i)
-
-            # Translate fixed images for debugging.
-            if (i+1) % self.sample_step == 0:
-                self.translate_samples(i, x_fixed, c_fixed_list)
-
-            # Save model checkpoints.
-            if (i+1) % self.model_save_step == 0 or (i+1) == self.num_iters:
-                self.save_checkpoints(i)
+    #         # Logging.
+    #         loss = {}
+    #         loss['D/loss_real'] = d_loss_real.item()
+    #         loss['D/loss_fake'] = d_loss_fake.item()
+    #         loss['D/loss_cls'] = d_loss_cls.item()
+    #         # loss['D/loss_gp'] = d_loss_gp.item()
             
-            # Decay learning rates.
-            if (i+1) % self.lr_update_step == 0 and (i+1) > (self.num_iters - self.num_iters_decay):
-                g_lr, d_lr = self.decay_learning_rates(g_lr, d_lr)
+    #         # =================================================================================== #
+    #         #                               3. Train the generator                                #
+    #         # =================================================================================== #
+            
+    #         if (i+1) % self.n_critic == 0:
+    #             # Original-to-target domain (use SWD instead of pure Wasserstein).
+    #             x_fake = self.G(x_real, c_trg)
+    #             num_samples = x_real.shape[0]
+
+    #             # if use discriminator with swd, need to:
+    #             # x_real -> D -> x_real_feature -> pass to swd
+    #             # x_fake -> D -> x_fake_feature -> pass to swd
+    #             # Transform samples using D if enabled
+    #             if self.use_d_feature:
+    #                 out_src, out_cls, h_fake = self.D(x_fake)
+    #                 # torch.Size([128, 1, 1, 1]) torch.Size([128, 3]) torch.Size([128, 2048, 1, 1])
+    #                 # print(out_src.shape, out_cls.shape, h_fake.shape)
+    #                 _, _, h_real = self.D(x_real)
+    #             else:
+    #                 out_src, out_cls = self.D(x_fake)
+
+    #             if self.use_d_feature:
+    #                 g_loss_fake = sliced_wasserstein_distance(
+    #                     h_real.view(num_samples, -1), h_fake.view(num_samples, -1),
+    #                     self.num_projections, self.device
+    #                 )
+    #             else:
+    #                 g_loss_fake = sliced_wasserstein_distance(
+    #                     x_real.view(num_samples, -1), x_fake.view(num_samples, -1),
+    #                     self.num_projections, self.device
+    #                 )
+
+    #             g_loss_cls = self.classification_loss(out_cls, label_trg, self.dataset)
+
+    #             # Target-to-original domain.
+    #             x_reconst = self.G(x_fake, c_org)
+    #             g_loss_rec = torch.mean(torch.abs(x_real - x_reconst))
+
+    #             # Backward and optimize.
+    #             g_loss = g_loss_fake + self.lambda_rec * g_loss_rec + self.lambda_cls * g_loss_cls
+    #             self.reset_grad()
+    #             g_loss.backward()
+    #             self.g_optimizer.step()
+
+    #             # Logging.
+    #             loss['G/loss_fake'] = g_loss_fake.item()
+    #             loss['G/loss_rec'] = g_loss_rec.item()
+    #             loss['G/loss_cls'] = g_loss_cls.item()
+
+    #         # =================================================================================== #
+    #         #                                 4. Miscellaneous                                    #
+    #         # =================================================================================== #
+
+    #         # Print out training information.
+    #         if (i+1) % self.log_step == 0:
+    #             et = time.time() - start_time  ### Pass this et to log_training_info
+    #             self.log_training_info(et, loss, i)
+
+    #         # Translate fixed images for debugging.
+    #         if (i+1) % self.sample_step == 0:
+    #             self.translate_samples(i, x_fixed, c_fixed_list)
+
+    #         # Save model checkpoints.
+    #         if (i+1) % self.model_save_step == 0 or (i+1) == self.num_iters:
+    #             self.save_checkpoints(i)
+            
+    #         # Decay learning rates.
+    #         if (i+1) % self.lr_update_step == 0 and (i+1) > (self.num_iters - self.num_iters_decay):
+    #             g_lr, d_lr = self.decay_learning_rates(g_lr, d_lr)
 
     def train_multi(self):
         """Train StarGAN with multiple datasets."""        

@@ -97,6 +97,9 @@ if __name__ == '__main__':
     parser.add_argument('--num_projections', type=int, default=10000, help='num of projections used to compute the swd')
     parser.add_argument('--use_d_feature', type=str2bool, default=False, help='use features of the discriminator to get swd')
 
+    # Training configuration for max sliced wasserstein loss.
+    parser.add_argument('--use_max_sw_loss', type=str2bool, default=False, help='train using max sliced wasserstein loss')
+
     # Test configuration.
     parser.add_argument('--test_iters', type=int, default=200000, help='test model from this step')
 
@@ -124,6 +127,11 @@ if __name__ == '__main__':
     parser.add_argument('--lr_update_step', type=int, default=1000)
 
     config = parser.parse_args()
+
+    # Validate the training configs
+    assert not (config.use_sw_loss and config.use_max_sw_loss), \
+        print("Config use_sw_loss and use_max_sw_loss cannot be True at the same time.")
+
     print(config)
 
     # Save configs to file
