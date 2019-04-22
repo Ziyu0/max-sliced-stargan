@@ -573,6 +573,8 @@ class Trainer(object):
         
         # Load the correct training method
         methods = self.load_training_method()
+        for key in methods:
+            print("{} method: {}".format(key, methods[key].__name__))
 
         # Start training.
         print('Start training...')
