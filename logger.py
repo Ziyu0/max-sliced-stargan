@@ -42,5 +42,5 @@ class EventLogger:
         self.logger.addHandler(console_hdl)
     
     def log(self, message):
-        """Log the message"""
+        """Log the message (str)"""
         self.logger.info(message)

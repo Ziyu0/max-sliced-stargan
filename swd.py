@@ -49,11 +49,17 @@ def max_sliced_wasserstein_distance(max_projected_true, max_projected_fake, devi
     This is equivalent to projecting the samples onto the the max projection 
     direction that maximizes the projected Wasserstein distance in the 
     feature space.
+
+    TODO: currently the last layer is 1x1 Conv, try FC later
     
     Args:
-        max_projected_true(tensor)
-        max_projected_fake(tensor)
-        device(str)
+        max_projected_true(tensor): Real samples projected by the discriminator, 
+            shape (N, num_features). Need to reshape images of (N, C, H, W) to 
+            (N, num_features) beforehand
+        max_projected_fake(tensor): Fake samples projected by the discriminator
+        device(str): device used when training
+    Returns:
+        Max Sliced Wasserstein Distance, a scalar
     """
 
     # Sort the max projection. If it has more than 1 component, sort by row.
@@ -62,5 +68,5 @@ def max_sliced_wasserstein_distance(max_projected_true, max_projected_fake, devi
     sorted_fake = torch.sort(max_projected_fake, dim=1)[0]    
 
     # Get Wasserstein-2 distance
-    # TODO: not sure if we need to take the average
-    return torch.pow(sorted_true - sorted_fake, 2)
+    # TODO: not sure if we need to take the average (take mean for now)
+    return torch.pow(sorted_true - sorted_fake, 2).mean()

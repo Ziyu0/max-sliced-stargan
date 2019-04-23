@@ -9,7 +9,7 @@ from torch.autograd import Variable
 from torchvision.utils import save_image
 
 from model import Discriminator, Generator
-from swd import sliced_wasserstein_distance
+from swd import sliced_wasserstein_distance, max_sliced_wasserstein_distance
 
 
 class Trainer(object):
@@ -345,7 +345,7 @@ class Trainer(object):
         x_fake = self.G(x_real, c_trg)
         outputs = self.D(x_fake.detach())
         out_src, out_cls = outputs[0], outputs[1]
-        
+
         d_loss_fake = torch.mean(out_src)
 
         # Compute loss for gradient penalty.
@@ -511,7 +511,40 @@ class Trainer(object):
         c_trg = data['c_trg']
         label_trg = data['label_trg']
 
-        # TODO: Finish this
+        # Original-to-target domain
+        x_fake = self.G(x_real, c_trg)
+        num_samples = x_real.shape[0]
+
+        outputs = self.D(x_fake)
+        assert len(outputs) == 3        # We must use D's feature in this case
+        out_src, out_cls, projected_fake = outputs
+        _, _, projected_real = self.D(x_real)
+
+        g_loss_fake = max_sliced_wasserstein_distance(
+            projected_real.view(num_samples, -1), 
+            projected_fake.view(num_samples, -1),
+            self.device
+        )
+
+        g_loss_cls = self.classification_loss(out_cls, label_trg, self.dataset)
+
+        # Target-to-original domain.
+        x_reconst = self.G(x_fake, c_org)
+        g_loss_rec = torch.mean(torch.abs(x_real - x_reconst))
+
+        # Backward and optimize.
+        g_loss = g_loss_fake + self.lambda_rec * g_loss_rec + self.lambda_cls * g_loss_cls
+        self.reset_grad()
+        g_loss.backward()
+        self.g_optimizer.step()
+
+        # Logging.
+        loss = {}
+        loss['G/loss_fake'] = g_loss_fake.item()
+        loss['G/loss_rec'] = g_loss_rec.item()
+        loss['G/loss_cls'] = g_loss_cls.item()
+
+        return loss
 
     def load_training_method(self):
         """Load the correct methods to train the discriminator and generator based on the 
@@ -583,11 +616,12 @@ class Trainer(object):
         
         # Load the correct training method
         methods = self.load_training_method()
+        self.event_logger.log("==> Loaded training methods.")
         for key in methods:
-            print("{} method: {}".format(key, methods[key].__name__))
+            self.event_logger.log("{} method: {}".format(key, methods[key].__name__))
 
         # Start training.
-        print('Start training...')
+        self.event_logger.log('==> Start training...')
         start_time = time.time()
 
         for i in range(start_iters, self.num_iters):
