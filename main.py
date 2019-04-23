@@ -93,6 +93,9 @@ if __name__ == '__main__':
 
     # Training configuration for sliced wasserstein loss.
     # TODO: add use_discriminator_feat: use feature produced by the D to compute the swd
+    parser.add_argument("--d_criterion", default='BCE', const='BCE', nargs='?', choices=['BCE', 'WGAN-GP'],
+                        help="criterion to train the discriminator when using SWD or max-SWD")
+
     parser.add_argument('--use_sw_loss', type=str2bool, default=False, help='train using sliced wasserstein loss')
     parser.add_argument('--num_projections', type=int, default=10000, help='num of projections used to compute the swd')
     parser.add_argument('--use_d_feature', type=str2bool, default=False, help='use features of the discriminator to get swd')

@@ -18,6 +18,7 @@ NUM_ITERS_DECAY=0       # 0 means not decay, 5000 means LR will be decayed in th
 NUM_PROJECTIONS=10000
 MODEL_SAVE_STEP=10000   # One ckpt is about ~200M, so don't save too many ckpts
 
+D_CRITERION='BCE'
 
 # Train
 python main.py \
@@ -41,4 +42,5 @@ python main.py \
 --num_projections $NUM_PROJECTIONS \
 --model_save_step $MODEL_SAVE_STEP \
 --resume_iters $RESUME_ITERS \
---use_d_feature $USE_D_FEATURE
+--use_d_feature $USE_D_FEATURE \
+--d_criterion $D_CRITERION

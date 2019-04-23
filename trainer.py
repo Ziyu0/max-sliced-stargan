@@ -49,6 +49,7 @@ class Trainer(object):
 
         # TODO: add the configs here
         # Training configuration for sliced wasserstein loss.
+        self.d_criterion = config.d_criterion
         self.use_sw_loss = config.use_sw_loss
         self.num_projections = config.num_projections if self.use_sw_loss else 0
         self.use_d_feature = config.use_d_feature
@@ -314,7 +315,7 @@ class Trainer(object):
         return g_lr, d_lr
 
     def _train_D_wasserstein_GP(self, data):
-        """[For original StarGAN objective] 
+        """[For original StarGAN objective or SWD and max-SWD] 
         Train discriminator using wasserstein distance with gradient penalty.
         
         Args:
@@ -334,13 +335,17 @@ class Trainer(object):
         label_org = data['label_org']
 
         # Compute loss with real images.
-        out_src, out_cls = self.D(x_real)
+        outputs = self.D(x_real)        # len will be either 2 or 3
+        out_src, out_cls = outputs[0], outputs[1]
+
         d_loss_real = - torch.mean(out_src)
         d_loss_cls = self.classification_loss(out_cls, label_org, self.dataset)
 
         # Compute loss with fake images.
         x_fake = self.G(x_real, c_trg)
-        out_src, out_cls = self.D(x_fake.detach())
+        outputs = self.D(x_fake.detach())
+        out_src, out_cls = outputs[0], outputs[1]
+        
         d_loss_fake = torch.mean(out_src)
 
         # Compute loss for gradient penalty.
@@ -518,13 +523,18 @@ class Trainer(object):
         """
 
         original, swd, max_swd = 'original', 'SWD', 'max-SWD'
+        
+        # Using BCE or WGAN-GP for the discriminator to assist SWD or max-SWD
+        d_method_for_swd = {
+            'BCE': self._train_D_BCE,
+            'WGAN-GP': self._train_D_wasserstein_GP
+        }
 
         d_method = {
             original: self._train_D_wasserstein_GP,
-            swd: self._train_D_BCE,
-            max_swd: self._train_D_BCE
+            swd: d_method_for_swd[self.d_criterion],
+            max_swd: d_method_for_swd[self.d_criterion]
         }
-
         g_method = {
             original: self._train_G_wasserstein,
             swd: self._train_G_sliced_wasserstein,
