@@ -6,7 +6,7 @@ N_CRITIC=5
 # N_CRITIC=1
 C_DIM=3
 SELECTED_ATTRS=("Blond_Hair" "Male" "Young")
-CUDA_DEVICE_NAME="cuda:1"
+CUDA_DEVICE_NAME="cuda:0"
 RESUME_ITERS=0          # 0 means not resume
 
 EXP_ROOT_DIR="stargan_celeba_max_sw_1"
