@@ -50,7 +50,7 @@ def main(config):
 
     if config.mode == 'train':
         if config.dataset in ['CelebA', 'RaFD']:
-                trainer.train()
+            trainer.train()
         elif config.dataset in ['Both']:
             trainer.train_multi()
     elif config.mode == 'test':
