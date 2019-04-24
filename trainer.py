@@ -84,6 +84,7 @@ class Trainer(object):
         self.lr_update_step = config.lr_update_step
 
         # Build the model and tensorboard.
+        self.actual_use_d_feature_flag = (self.use_sw_loss and self.use_d_feature) or self.use_max_sw_loss
         self.build_model()
         if self.use_tensorboard:
             self.build_tensorboard()
@@ -93,16 +94,14 @@ class Trainer(object):
 
     def build_model(self):
         """Create a generator and a discriminator."""
-        use_d_feature_flag = (self.use_sw_loss and self.use_d_feature) or self.use_max_sw_loss
-
         if self.dataset in ['CelebA', 'RaFD']:
             self.G = Generator(self.g_conv_dim, self.c_dim, self.g_repeat_num)
             self.D = Discriminator(self.image_size, self.d_conv_dim, self.c_dim, self.d_repeat_num,
-                                   use_d_feature=use_d_feature_flag) 
+                                   use_d_feature=self.actual_use_d_feature_flag) 
         elif self.dataset in ['Both']:
             self.G = Generator(self.g_conv_dim, self.c_dim+self.c2_dim+2, self.g_repeat_num)   # 2 for mask vector.
             self.D = Discriminator(self.image_size, self.d_conv_dim, self.c_dim+self.c2_dim, self.d_repeat_num,
-                                   use_d_feature=use_d_feature_flag)
+                                   use_d_feature=self.actual_use_d_feature_flag)
 
         self.g_optimizer = torch.optim.Adam(self.G.parameters(), self.g_lr, [self.beta1, self.beta2])
         self.d_optimizer = torch.optim.Adam(self.D.parameters(), self.d_lr, [self.beta1, self.beta2])
@@ -417,7 +416,8 @@ class Trainer(object):
         
         # Compute loss with real images
         outputs = self.D(x_real)
-        assert (len(outputs) == 3 and self.use_d_feature) or (len(outputs) == 2 and not self.use_d_feature)
+        assert ((len(outputs) == 3 and self.actual_use_d_feature_flag) or 
+            (len(outputs) == 2 and not self.actual_use_d_feature_flag)), print(len(outputs))
         
         out_src, out_cls = outputs[0], outputs[1]
         d_loss_real = F.binary_cross_entropy_with_logits(out_src, torch.ones_like(out_src))
