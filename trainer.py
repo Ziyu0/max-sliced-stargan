@@ -334,7 +334,7 @@ class Trainer(object):
         label_org = data['label_org']
 
         # Compute loss with real images.
-        outputs = self.D(x_real)        # len will be either 2 or 3
+        outputs = self.D(x_real)            # len will be either 2 or 3
         out_src, out_cls = outputs[0], outputs[1]
 
         d_loss_real = - torch.mean(out_src)
@@ -350,7 +350,10 @@ class Trainer(object):
         # Compute loss for gradient penalty.
         alpha = torch.rand(x_real.size(0), 1, 1, 1).to(self.device)
         x_hat = (alpha * x_real.data + (1 - alpha) * x_fake.data).requires_grad_(True)
-        out_src, _ = self.D(x_hat)
+        
+        outputs = self.D(x_hat)         # len will be either 2 or 3
+        out_src = outputs[0]
+        
         d_loss_gp = self.gradient_penalty(out_src, x_hat)
 
         # Backward and optimize.
