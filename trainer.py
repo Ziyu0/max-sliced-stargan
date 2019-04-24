@@ -616,7 +616,7 @@ class Trainer(object):
         
         # Load the correct training method
         methods = self.load_training_method()
-        self.event_logger.log("==> Loaded training methods.")
+        self.event_logger.log("==> Loaded training methods")
         for key in methods:
             self.event_logger.log("{} method: {}".format(key, methods[key].__name__))
 
