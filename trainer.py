@@ -426,9 +426,10 @@ class Trainer(object):
         # Compute loss with fake images
         x_fake = self.G(x_real, c_trg)
         outputs = self.D(x_fake.detach())
-        assert (len(outputs) == 3 and self.use_d_feature) or (len(outputs) == 2 and not self.use_d_feature)
+        assert ((len(outputs) == 3 and self.actual_use_d_feature_flag) or 
+            (len(outputs) == 2 and not self.actual_use_d_feature_flag)), print(len(outputs))
+        
         out_src, out_cls = outputs[0], outputs[1]
-
         d_loss_fake = F.binary_cross_entropy_with_logits(out_src, torch.zeros_like(out_src))
 
         # Backward and optimize.
