@@ -8,14 +8,15 @@ SELECTED_ATTRS=("Blond_Hair" "Male" "Young")
 CUDA_DEVICE_NAME="cuda:1"
 RESUME_ITERS=0        # 0 means not resume
 
-EXP_ROOT_DIR="stargan_celeba_sw_1"
+EXP_ROOT_DIR="stargan_celeba_sw_4"
 USE_SW_LOSS=True
-BATCH_SIZE=128
-NUM_ITERS=10000
-NUM_ITERS_DECAY=5000  # 0 means not decay, 5000 means LR will be decayed in the last 5000 iters
+BATCH_SIZE=16
+NUM_ITERS=200000
+NUM_ITERS_DECAY=100000  # 0 means not decay, 5000 means LR will be decayed in the last 5000 iters
 NUM_PROJECTIONS=10000
-MODEL_SAVE_STEP=5000  # One ckpt is about ~200M, so don't save too many ckpts
+MODEL_SAVE_STEP=10000  # One ckpt is about ~200M, so don't save too many ckpts
 
+D_CRITERION='WGAN-GP'
 
 # Train
 python main.py \
@@ -38,4 +39,5 @@ python main.py \
 --num_iters_decay $NUM_ITERS_DECAY \
 --num_projections $NUM_PROJECTIONS \
 --model_save_step $MODEL_SAVE_STEP \
---resume_iters $RESUME_ITERS
+--resume_iters $RESUME_ITERS \
+--d_criterion $D_CRITERION
