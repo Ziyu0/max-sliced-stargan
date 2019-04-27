@@ -59,6 +59,7 @@ class Trainer(object):
 
         # Test configurations.
         self.test_iters = config.test_iters
+        self.test_type = config.test_type
 
         # Miscellaneous.
         self.use_tensorboard = config.use_tensorboard
@@ -867,6 +868,21 @@ class Trainer(object):
         elif self.dataset == 'RaFD':
             data_loader = self.rafd_loader
         
+        # Choose test method
+        test_methods = {
+            'general': self._general_test,
+            'small': self._small_test
+        }
+        assert self.test_type in list(test_methods.keys()), print(self.test_type)
+
+        # Test
+        self.event_logger.log("==> Testing using {} method..."
+                              .format(test_methods[self.test_type].__name__))
+        test_methods[self.test_type](data_loader)
+    
+    def _general_test(self, data_loader):
+        """Test on the entire test dataset"""
+
         with torch.no_grad():
             for i, (x_real, c_org) in enumerate(data_loader):
 
@@ -884,6 +900,11 @@ class Trainer(object):
                 result_path = os.path.join(self.result_dir, '{}-images.jpg'.format(i+1))
                 save_image(self.denorm(x_concat.data.cpu()), result_path, nrow=1, padding=0)
                 print('Saved real and fake images into {}...'.format(result_path))
+    
+    def _small_test(self, data_loader):
+        """Test on some specific images of the test dataset. Used to generate plots"""
+        # self.test_type 
+
 
     def test_multi(self):
         """Translate images using StarGAN trained on multiple datasets."""

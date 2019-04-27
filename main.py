@@ -106,6 +106,8 @@ if __name__ == '__main__':
 
     # Test configuration.
     parser.add_argument('--test_iters', type=int, default=200000, help='test model from this step')
+    parser.add_argument('--test_type', default='general', const='general', nargs='?', choices=['general', 'small'], 
+                        help='type of the test to perform')
 
     # Miscellaneous.
     parser.add_argument('--num_workers', type=int, default=1)
