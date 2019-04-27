@@ -28,8 +28,9 @@ def main(config):
     
     # Save configs to file
     with open(config.config_dir + '/configs.txt', 'w') as file:
-        for arg in vars(config):
-            file.write("{}: {}\n".format(arg, getattr(config, arg)))
+        config_dict = vars(config)
+        for arg in config_dict:
+            file.write("{}: {}\n".format(arg, config_dict[arg]))
 
     # Data loader.
     celeba_loader = None
