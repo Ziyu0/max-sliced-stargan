@@ -524,12 +524,27 @@ class Trainer(object):
 
         outputs = self.D(x_fake)
         assert len(outputs) == 3        # We must use D's feature in this case
-        out_src, out_cls, projected_fake = outputs
-        _, _, projected_real = self.D(x_real)
+        
+        # out_src, out_cls, projected_fake = outputs
+        # _, _, projected_real = self.D(x_real)
 
+        # g_loss_fake = max_sliced_wasserstein_distance(
+        #     projected_real.view(num_samples, -1), 
+        #     projected_fake.view(num_samples, -1),
+        #     self.device
+        # )
+
+        # ========== updated ============
+
+        # TODO: [Added test] try pass out_src to max swd
+        # according to the paper, we just need 1 projection direction
+        out_src_real, out_cls, projected_fake = outputs
+        out_src_fake, _, _ = self.D(x_real)
+
+        # transform out_src (N,1,1,1) to (N,1)
         g_loss_fake = max_sliced_wasserstein_distance(
-            projected_real.view(num_samples, -1), 
-            projected_fake.view(num_samples, -1),
+            out_src_real.view(num_samples, -1), 
+            out_src_fake.view(num_samples, -1),
             self.device
         )
 

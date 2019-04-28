@@ -17,8 +17,6 @@ def sliced_wasserstein_distance(true_samples, fake_samples, num_projections, dev
         Sliced Wasserstein Distance, a scalar
     """
 
-    # FIXME: loss is very close to 0 all the time -> vanishing gradient?
-
     num_features = true_samples.shape[1]
 
     # Random projection directions, shape (num_features, num_projections)
@@ -62,8 +60,13 @@ def max_sliced_wasserstein_distance(max_projected_true, max_projected_fake, devi
         Max Sliced Wasserstein Distance, a scalar
     """
 
+    # The input num_features can be considered as num_projections
+    # If use out_src, then input will be (N, 1) => 1 max projection direction
+    # TODO: [Added] Transpose from (N, 1) to (1, N), where the row is the projection
+    max_projected_true = max_projected_true.transpose(0, 1)
+    max_projected_fake = max_projected_fake.transpose(0, 1)
+
     # Sort the max projection. If it has more than 1 component, sort by row.
-    # TODO: clarify the out_features of the FC layer
     sorted_true = torch.sort(max_projected_true, dim=1)[0]
     sorted_fake = torch.sort(max_projected_fake, dim=1)[0]    
 
