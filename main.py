@@ -93,7 +93,6 @@ if __name__ == '__main__':
                         default=['Black_Hair', 'Blond_Hair', 'Brown_Hair', 'Male', 'Young'])
 
     # Training configuration for sliced wasserstein loss.
-    # TODO: add use_discriminator_feat: use feature produced by the D to compute the swd
     parser.add_argument("--d_criterion", default='BCE', const='BCE', nargs='?', choices=['BCE', 'WGAN-GP'],
                         help="criterion to train the discriminator when using SWD or max-SWD")
 
@@ -108,7 +107,7 @@ if __name__ == '__main__':
     parser.add_argument('--test_iters', type=int, default=200000, help='test model from this step')
     parser.add_argument('--test_type', default='general', const='general', nargs='?', choices=['general', 'small'], 
                         help='type of the test to perform')
-    parser.add_argument('--test_img_numbers', '--list', nargs='+', default=[10, 165],
+    parser.add_argument('--test_img_numbers', nargs='+', default=[10, 165],
                         help='the No. of the selected images for small test')
 
     # Miscellaneous.
