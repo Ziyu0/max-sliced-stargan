@@ -6,7 +6,7 @@ C_DIM=3
 SELECTED_ATTRS=("Blond_Hair" "Male" "Young")
 CUDA_DEVICE_NAME="cuda:1"
 
-EXP_ROOT_DIR="stargan_celeba_1"     # Root dir of the ckpt to be loaded
+EXP_ROOT_DIR="stargan_celeba_sw_d_8"     # Root dir of the ckpt to be loaded
 BATCH_SIZE=16                       # Use a small number so that the output images won't be too big
 TEST_ITERS=200000                   # Part of the name of the ckpt
 
