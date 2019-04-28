@@ -60,6 +60,8 @@ class Trainer(object):
         # Test configurations.
         self.test_iters = config.test_iters
         self.test_type = config.test_type
+        self.celeba_image_dir = config.celeba_image_dir
+        self.test_img_numbers = config.test_img_numbers
 
         # Miscellaneous.
         self.use_tensorboard = config.use_tensorboard
@@ -902,9 +904,39 @@ class Trainer(object):
                 print('Saved real and fake images into {}...'.format(result_path))
     
     def _small_test(self, data_loader):
-        """Test on some specific images of the test dataset. Used to generate plots"""
+        """Test on some specific images of the test dataset. Used to generate plots.
+        This method currently supports CelebA dataset only."""
         # self.test_type 
+        # ['050245.jpg', [False, False, True]]
+        # ['105921.jpg', [False, False, True]]
+        # self.celeba_image_dir
+        count = 0
+        self.test_img_numbers = list(map(int, self.test_img_numbers))
 
+        with torch.no_grad():
+            for i, (x_real, c_org) in enumerate(data_loader):
+                if i not in self.test_img_numbers:
+                    continue 
+                if count == len(self.test_img_numbers):
+                    break
+
+                # Found the image to be tested on
+                count += 1
+
+                # Prepare input images and target domain labels.
+                x_real = x_real.to(self.device)
+                c_trg_list = self.create_labels(c_org, self.c_dim, self.dataset, self.selected_attrs)
+
+                # Translate images.
+                x_fake_list = [x_real]
+                for c_trg in c_trg_list:
+                    x_fake_list.append(self.G(x_real, c_trg))
+
+                # Save the translated images.
+                x_concat = torch.cat(x_fake_list, dim=3)
+                result_path = os.path.join(self.result_dir, '{}-images.jpg'.format(count))
+                save_image(self.denorm(x_concat.data.cpu()), result_path, nrow=1, padding=0)
+                print('Saved real and fake images into {}...'.format(result_path))
 
     def test_multi(self):
         """Translate images using StarGAN trained on multiple datasets."""

@@ -65,10 +65,6 @@ class CelebA(data.Dataset):
                 self.train_dataset.append([filename, label])
 
         print('Finished preprocessing the CelebA dataset...')
-        print('==> images names:')
-        print(self.test_dataset[10])   # 1-images
-        print(self.test_dataset[165])    # 11-images
-
 
     def __getitem__(self, index):
         """Return one image and its corresponding attribute label."""

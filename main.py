@@ -108,6 +108,8 @@ if __name__ == '__main__':
     parser.add_argument('--test_iters', type=int, default=200000, help='test model from this step')
     parser.add_argument('--test_type', default='general', const='general', nargs='?', choices=['general', 'small'], 
                         help='type of the test to perform')
+    parser.add_argument('--test_img_numbers', '--list', nargs='+', default=[10, 165],
+                        help='the No. of the selected images for small test')
 
     # Miscellaneous.
     parser.add_argument('--num_workers', type=int, default=1)
