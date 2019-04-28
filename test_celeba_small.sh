@@ -21,7 +21,7 @@ python main.py \
 --sample_dir "$EXP_ROOT_DIR/samples" \
 --log_dir "$EXP_ROOT_DIR/logs" \
 --model_save_dir "$EXP_ROOT_DIR/models" \
---result_dir "$EXP_ROOT_DIR/results_$TEST_ITERS" \
+--result_dir "$EXP_ROOT_DIR/results_${TEST_ITERS}_${TEST_TYPE}" \
 --config_dir "$EXP_ROOT_DIR/configs" \
 --progress_dir "$EXP_ROOT_DIR/progress" \
 --c_dim $C_DIM \
