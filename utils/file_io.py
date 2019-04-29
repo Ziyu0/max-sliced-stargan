@@ -35,9 +35,9 @@ def load_loss_files(root, exp_name, exp_ids):
             such as 'stargan_celeba_max_sw'
         exp_ids(list): List of the IDs of the experiments to be loaded
     Returns:
-        loss(dict<dict>): Key = exp name, val = loss dict of this exp
+        loss(list<dict>): Each entry is the loss dict of an exp
     """
-    loss = defaultdict(list)
+    loss = []
     
     for exp_id in exp_ids:
         # Get folder in form 'expName_expID/logs', eg, 'stargan_celeba_1/logs'
@@ -47,7 +47,7 @@ def load_loss_files(root, exp_name, exp_ids):
         # Get loss for each experiment
         single_loss = load_single_loss_file(exp_path)
         if single_loss:
-            loss[exp_dir_name].append(single_loss)
+            loss.append(single_loss)
     
     return loss
 

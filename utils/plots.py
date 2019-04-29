@@ -14,12 +14,18 @@ from file_io import load_loss_files
 
 def plot_all_loss(log_step, all_loss, plot_dir, 
                   plot_name, title, labels):
-    """
-    Note that only loss of the same type of experiments can be put together
+    """Plot all items for the loss of specified experiments.
+    Note that only loss of the same type of experiments can be put together.
     """
 
     # Leave the color as default?
+
+    loss_tags = list
     
+    pass
+
+def plot_g_fake_loss():
+    """Plot only G/loss_fake for the loss of specified experiments."""
     pass
 
 def main(args):
