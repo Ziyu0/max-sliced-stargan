@@ -7,6 +7,7 @@ Updated on
 import matplotlib
 matplotlib.use("TkAgg")         # prevent matplotlib from crashing on MacOS
 import matplotlib.pyplot as plt
+import matplotlib.font_manager as font_manager
 
 import numpy as np
 import argparse
@@ -14,15 +15,17 @@ import os
 
 from file_io import load_loss_files
 
-def plot_all_loss(log_step, all_loss, plot_dir, title, labels):
+def plot_all_loss(log_step, all_loss, plot_dir, labels):
     """Plot all items for the loss of specified experiments.
     Note that only loss of the same type of experiments can be put together.
     Plots will be saved as plot_dir/loss_tag.png
     """
 
-    # Leave the color as default?
-
+    # Get all loss tags
     loss_tags = list(all_loss[0].keys())
+
+    # Font of the plots: 'serif', 'sans-serif'
+    font = {'fontname': 'serif'}
 
     # Create a plot for each loss tag
     for loss_tag in loss_tags:
@@ -39,25 +42,27 @@ def plot_all_loss(log_step, all_loss, plot_dir, title, labels):
         
             num_iters = len(loss_dict[loss_tag])
         
-        # Set x axis, limit to 10 ticks only
+        # Set x axis, limit to 5 ticks only
         total_num_iters = num_iters * log_step
-        inteval = total_num_iters // 10
+        inteval = total_num_iters // 5
         x_ticks = list(range(0, total_num_iters + log_step, inteval))
 
         # Change labels of x_ticks to ['0', '20k', '40k', ...]
         x_tick_labels = [str(num // 1000) + 'k' for num in x_ticks]
         x_tick_labels[0] = '0'
         
-        # Configure the plot info
-        plt.xticks(x_ticks, labels=x_tick_labels)
-        plt.xlabel('Iterations')
-        plt.ylabel('Training loss [{}]'.format(loss_tag))
-        plt.legend(loc='upper right')
-        plt.title(title)
+        # Configure the plot info cmunrm
+        plt.xticks(x_ticks, labels=x_tick_labels, **font)
+        plt.xlabel('Iterations', **font)
+        plt.yticks(**font)
+        plt.ylabel('Training loss [{}]'.format(loss_tag), **font)
+
+        font_prop = font_manager.FontProperties(family=font['fontname'])
+        plt.legend(loc='upper right', prop=font_prop)
 
         # Convert loss_tag 'D/loss_real' => 'D_loss_real' and save
         save_path = '{}/{}.png'.format(plot_dir, '_'.join(loss_tag.split('/')))
-        plt.savefig(save_path, format='png', dpi=150)
+        plt.savefig(save_path, format='png', dpi=200)
         print('Figure saved as', save_path)
 
         # Clear the current figure
@@ -94,13 +99,7 @@ def main(args):
         os.makedirs(plot_dir)
     
     print("==> Generating plots...")
-    plot_all_loss(
-        args.log_step, 
-        all_loss, 
-        plot_dir,
-        args.title,
-        labels
-    )
+    plot_all_loss(args.log_step, all_loss, plot_dir, labels)
     
 
 if __name__ == '__main__':
@@ -119,7 +118,6 @@ if __name__ == '__main__':
     parser.add_argument('--label_attr', type=str, help='attribute name of the plot labels')
     parser.add_argument('--label_vals', nargs='+', help='values of the plot labels')
     parser.add_argument('--plot_root', type=str, default='./plots', help='root dir to save the plots')
-    parser.add_argument('--title', type=str)
 
     args = parser.parse_args()
     print(args)
