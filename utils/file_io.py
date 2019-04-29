@@ -34,6 +34,10 @@ def load_loss_files(root, exp_name, exp_ids):
         exp_name(str): Name of the experiment which is part of the exp dir name,
             such as 'stargan_celeba_max_sw'
         exp_ids(list): List of the IDs of the experiments to be loaded
+            0 - stargan_celeba
+            1 - stargan_celeba_sw
+            2 - stargan_celeba_sw_d
+            3 - stargan_celeba_max_sw
     Returns:
         loss(list<dict>): Each entry is the loss dict of an exp
     """
@@ -50,8 +54,3 @@ def load_loss_files(root, exp_name, exp_ids):
             loss.append(single_loss)
     
     return loss
-
-    # 0 - stargan_celeba
-    # 1 - stargan_celeba_sw
-    # 2 - stargan_celeba_sw_d
-    # 3 - stargan_celeba_max_sw
