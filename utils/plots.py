@@ -5,5 +5,6 @@ Updated on
 @author: Ziyu
 """
 
-def plot_loss():
+def plot_loss(log_step):
+    # need : log_step
     pass
