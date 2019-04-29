@@ -12,17 +12,40 @@ import os
 
 from file_io import load_loss_files
 
-def plot_all_loss(log_step, all_loss, plot_dir, 
-                  plot_name, title, labels):
+def plot_all_loss(log_step, all_loss, plot_dir, title, labels):
     """Plot all items for the loss of specified experiments.
     Note that only loss of the same type of experiments can be put together.
+    Plots will be saved as plot_dir/loss_tag.png
     """
 
     # Leave the color as default?
 
-    loss_tags = list
-    
-    pass
+    loss_tags = list(all_loss[0].keys())
+
+    # Create a plot for each loss tag
+    for loss_tag in loss_tags:
+        print("Plotting {}...".format(loss_tag))
+
+        # Create a new figure
+        plt.figure()
+
+        # Plot loss for each exp
+        for i, loss_dict in enumerate(all_loss):
+            x = list( range(0, len(loss_dict[loss_tag]) * log_step, log_step) )
+            plt.plot(x, loss_dict[loss_tag], clip_on=False, label=labels[i])
+        
+            num_iters = len(loss_dict[loss_tag])
+        
+        x_ticks = list(range(0, (num_iters + 1) * log_step, 10000))
+        plt.xticks(x_ticks)
+        plt.xlabel('Iterations')
+        plt.ylabel('Training loss [{}]'.format(loss_tag))
+        plt.legend(loc='upper right')
+
+        plt.savefig('{}/{}.png'.format(plot_dir, loss_tag), format='png', dpi=150)
+
+        # Clear the current figure
+        plt.close()
 
 def plot_g_fake_loss():
     """Plot only G/loss_fake for the loss of specified experiments."""
@@ -40,11 +63,12 @@ def main(args):
     exp_ids = list(map(int, args.exp_ids))
 
     # Get all the loss
+    print("==> Loading loss...")
     all_loss = load_loss_files(args.exp_root, exp_name, exp_ids)
 
     # Create labels for the plot, such as 'n_critic = 5'
     labels = []
-    for val in args.label_vars:
+    for val in args.label_vals:
         labels.append('{} = {}'.format(args.label_attr, val))
     
     # Get subdir to save the plots, eg, 'plots/stargan_celeba[n_critic]'
@@ -53,11 +77,11 @@ def main(args):
     if not os.path.exists(plot_dir):
         os.makedirs(plot_dir)
     
+    print("==> Generating plots...")
     plot_all_loss(
         args.log_step, 
         all_loss, 
         plot_dir,
-        args.plot_name,
         args.title,
         labels
     )
@@ -79,7 +103,6 @@ if __name__ == '__main__':
     parser.add_argument('--label_attr', type=str, help='attribute name of the plot labels')
     parser.add_argument('--label_vals', nargs='+', help='values of the plot labels')
     parser.add_argument('--plot_root', type=str, default='./plots', help='root dir to save the plots')
-    parser.add_argument('--plot_name', type=str)
     parser.add_argument('--title', type=str)
 
     args = parser.parse_args()
