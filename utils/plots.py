@@ -4,8 +4,10 @@ Created on April 20, 2019
 Updated on
 @author: Ziyu
 """
-
+import matplotlib
+matplotlib.use("TkAgg")         # prevent matplotlib from crashing on MacOS
 import matplotlib.pyplot as plt
+
 import numpy as np
 import argparse
 import os
@@ -32,17 +34,31 @@ def plot_all_loss(log_step, all_loss, plot_dir, title, labels):
         # Plot loss for each exp
         for i, loss_dict in enumerate(all_loss):
             x = list( range(0, len(loss_dict[loss_tag]) * log_step, log_step) )
-            plt.plot(x, loss_dict[loss_tag], clip_on=False, label=labels[i])
+            plt.plot(x, loss_dict[loss_tag], label=labels[i], 
+                     alpha=0.6, linewidth=0.6, clip_on=False)
         
             num_iters = len(loss_dict[loss_tag])
         
-        x_ticks = list(range(0, (num_iters + 1) * log_step, 10000))
-        plt.xticks(x_ticks)
+        # Set x axis, limit to 10 ticks only
+        total_num_iters = num_iters * log_step
+        inteval = total_num_iters // 10
+        x_ticks = list(range(0, total_num_iters + log_step, inteval))
+
+        # Change labels of x_ticks to ['0', '20k', '40k', ...]
+        x_tick_labels = [str(num // 1000) + 'k' for num in x_ticks]
+        x_tick_labels[0] = '0'
+        
+        # Configure the plot info
+        plt.xticks(x_ticks, labels=x_tick_labels)
         plt.xlabel('Iterations')
         plt.ylabel('Training loss [{}]'.format(loss_tag))
         plt.legend(loc='upper right')
+        plt.title(title)
 
-        plt.savefig('{}/{}.png'.format(plot_dir, loss_tag), format='png', dpi=150)
+        # Convert loss_tag 'D/loss_real' => 'D_loss_real' and save
+        save_path = '{}/{}.png'.format(plot_dir, '_'.join(loss_tag.split('/')))
+        plt.savefig(save_path, format='png', dpi=150)
+        print('Figure saved as', save_path)
 
         # Clear the current figure
         plt.close()

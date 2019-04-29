@@ -14,7 +14,9 @@ EXP_IDS=(1 2 3)
 
 LABEL_ATTR="n_critic"
 LABEL_VALS=(5 1 5)      # Must align with exp_ids
-TITLE="${LABEL_ATTR}_just_test"
+
+DETAIL="just test"
+TITLE="${LABEL_ATTR}_${DETAIL}"
 
 python utils/plots.py \
 --exp_root $EXP_ROOT \
