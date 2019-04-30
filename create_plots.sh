@@ -10,10 +10,11 @@ EXP_ROOT="./"
 PLOT_ROOT="./plots"
 
 EXP_TYPE_ID=3           # See keys of the exp_types above
-EXP_IDS=(1 2 3)
+EXP_IDS=(1 2 3 4)
 
 LABEL_ATTR="d_loss"
-LABEL_VALS=("BCE" "WGAN-GP" "WGAN-GP")      # Must align with exp_ids
+
+LABEL_VALS=("1-BCE" "2-WGAN-GP" "3-WGAN-GP" "4-WGAN-GP")      # Must align with exp_ids
 
 
 python utils/plots.py \

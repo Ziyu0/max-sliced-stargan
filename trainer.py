@@ -1,3 +1,4 @@
+:q
 import datetime
 import os
 import time
