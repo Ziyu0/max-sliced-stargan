@@ -57,6 +57,7 @@ class Trainer(object):
 
         # Training configuration for max sliced wasserstein loss.
         self.use_max_sw_loss = config.use_max_sw_loss
+        self.sort_scalar = config.sort_scalar
 
         # Test configurations.
         self.test_iters = config.test_iters
@@ -526,30 +527,29 @@ class Trainer(object):
         outputs = self.D(x_fake)
         assert len(outputs) == 3        # We must use D's feature in this case
         
-        out_src, out_cls, projected_fake = outputs
-        _, _, projected_real = self.D(x_real)
+        if not self.sort_scalar:
+            out_src, out_cls, projected_fake = outputs
+            _, _, projected_real = self.D(x_real)
 
-        g_loss_fake = max_sliced_wasserstein_distance(
-            projected_real.view(num_samples, -1), 
-            projected_fake.view(num_samples, -1),
-            self.device
-        )
+            # Pass output of D's penultimate layer to max swd (sort vector)
+            g_loss_fake = max_sliced_wasserstein_distance(
+                projected_real.view(num_samples, -1), 
+                projected_fake.view(num_samples, -1),
+                self.device
+            )
 
-        # ========== updated ============
+        else:
+            out_src_real, out_cls, projected_fake = outputs
+            out_src_fake, _, _ = self.D(x_real)
 
-        # TODO: [Added test] try pass out_src to max swd
-        # according to the paper, we just need 1 projection direction
-        # out_src_real, out_cls, projected_fake = outputs
-        # out_src_fake, _, _ = self.D(x_real)
-
-        # # transform out_src (N,1,1,1) to (N,1)
-        # g_loss_fake = max_sliced_wasserstein_distance(
-        #     out_src_real.view(num_samples, -1), 
-        #     out_src_fake.view(num_samples, -1),
-        #     self.device
-        # )
-
-        # ========== updated ============
+            # Pass out_src of D's last layer to max swd (sort scalar)
+            # According to the paper, we just need 1 projection direction
+            # NOTE: transform out_src (N, 1, 1, 1) to (N, 1)
+            g_loss_fake = max_sliced_wasserstein_distance(
+                out_src_real.view(num_samples, -1), 
+                out_src_fake.view(num_samples, -1),
+                self.device
+            )
 
         g_loss_cls = self.classification_loss(out_cls, label_trg, self.dataset)
 

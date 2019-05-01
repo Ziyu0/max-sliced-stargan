@@ -102,6 +102,8 @@ if __name__ == '__main__':
 
     # Training configuration for max sliced wasserstein loss.
     parser.add_argument('--use_max_sw_loss', type=str2bool, default=False, help='train using max sliced wasserstein loss')
+    parser.add_argument('--sort_scalar', type=str2bool, default=False, 
+                        help='sort scalar output [w^T*h] when computing the max swd; if false, sort vector output [h]') 
 
     # Test configuration.
     parser.add_argument('--test_iters', type=int, default=200000, help='test model from this step')
