@@ -12,8 +12,8 @@ RESUME_ITERS=0          # 0 means not resume
 EXP_ROOT_DIR="stargan_celeba_max_sw_1"
 USE_MAX_SW_LOSS=True
 BATCH_SIZE=16
-NUM_ITERS=200000
-NUM_ITERS_DECAY=100000       # 0 means not decay, 5000 means LR will be decayed in the last 5000 iters
+NUM_ITERS=100000
+NUM_ITERS_DECAY=0       # 0 means not decay, 5000 means LR will be decayed in the last 5000 iters
 MODEL_SAVE_STEP=10000   # One ckpt is about ~200M, so don't save too many ckpts
 
 D_CRITERION="BCE"
