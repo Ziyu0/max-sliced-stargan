@@ -116,7 +116,7 @@ if __name__ == '__main__':
     parser.add_argument('--num_workers', type=int, default=1)
     parser.add_argument('--mode', type=str, default='train', choices=['train', 'test'])
     parser.add_argument('--use_tensorboard', type=str2bool, default=True)
-    parser.add_argument('--cuda_device_name', type=str, default='cuda:0', choices=['cuda:0', 'cuda:1'])
+    parser.add_argument('--cuda_device_name', type=str, default='cuda:0', choices=['cuda:0', 'cuda:1', 'cuda:2'])
 
     # Directories.
     parser.add_argument('--celeba_image_dir', type=str, default='data/celeba/images')

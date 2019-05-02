@@ -9,16 +9,16 @@
 EXP_ROOT="./"
 PLOT_ROOT="./plots"
 
-EXP_TYPE_ID=2           # See keys of the exp_types above
-EXP_IDS=(2 6 7)
+EXP_TYPE_ID=3           # See keys of the exp_types above
+EXP_IDS=(5)
 # EXP_IDS=(1 2 3 4)
 
 # LABEL_ATTR="d_loss"
-LABEL_ATTR="multi_settings_2"
+LABEL_ATTR="sort"
 
 # LABEL_VALS=("1-BCE" "2-WGAN-GP" "3-WGAN-GP" "4-WGAN-GP")      # Must align with exp_ids
 # LABEL_VALS=("2-size-64" "6-size-128" "7-size-128-proj-20000" "8-size-64-WGP")
-LABEL_VALS=("2-size-64" "6-size-128" "7-size-128-proj-20000")
+LABEL_VALS=("h-vector")
 
 
 
