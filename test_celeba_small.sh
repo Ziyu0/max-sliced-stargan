@@ -11,7 +11,7 @@ BATCH_SIZE=1                       # MUST use 1 otherwise the specific images ma
 TEST_ITERS=100000                   # Part of the name of the ckpt
 
 TEST_TYPE='small'
-TEST_IMG_NUMBERS=(10 165 170)
+TEST_IMG_NUMBERS=(10 165 163 170)
 
 # Train
 python main.py \

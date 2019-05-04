@@ -52,8 +52,10 @@ def main(config):
     if config.mode == 'train':
         if config.dataset in ['CelebA', 'RaFD']:
             trainer.train()
+            trainer.test()
         elif config.dataset in ['Both']:
             trainer.train_multi()
+            trainer.test_multi()
     elif config.mode == 'test':
         if config.dataset in ['CelebA', 'RaFD']:
             trainer.test()
