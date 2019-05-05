@@ -49,6 +49,9 @@ def main(config):
     # Trainer for training and testing StarGAN.
     trainer = Trainer(celeba_loader, rafd_loader, config)
 
+    # Ensure test iter is no greater than train iters
+    config.test_iters = min(config.test_iters, config.num_iters)
+
     if config.mode == 'train':
         if config.dataset in ['CelebA', 'RaFD']:
             trainer.train()
@@ -108,7 +111,7 @@ if __name__ == '__main__':
                         help='sort scalar output [w^T*h] when computing the max swd; if false, sort vector output [h]') 
 
     # Test configuration.
-    parser.add_argument('--test_iters', type=int, default=200000, help='test model from this step')
+    parser.add_argument('--test_iters', type=int, default=100000, help='test model from this step')
     parser.add_argument('--test_type', default='general', const='general', nargs='?', choices=['general', 'small'], 
                         help='type of the test to perform')
     parser.add_argument('--test_img_numbers', nargs='+', default=[10, 165],
