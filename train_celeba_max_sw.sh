@@ -1,7 +1,7 @@
 #!/bin/bash
 
 DATASET="CelebA"
-IMAGE_SIZE=64
+IMAGE_SIZE=128
 N_CRITIC=5
 # N_CRITIC=1
 C_DIM=3

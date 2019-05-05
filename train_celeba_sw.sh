@@ -1,7 +1,7 @@
 #!/bin/bash
 
 DATASET="CelebA"
-IMAGE_SIZE=64
+IMAGE_SIZE=128
 N_CRITIC=5
 C_DIM=3
 SELECTED_ATTRS=("Blond_Hair" "Male" "Young")
@@ -11,7 +11,7 @@ RESUME_ITERS=0        # 0 means not resume
 EXP_ROOT_DIR="stargan_celeba_sw_4"
 USE_SW_LOSS=True
 BATCH_SIZE=16
-NUM_ITERS=200000
+NUM_ITERS=100000
 NUM_ITERS_DECAY=100000  # 0 means not decay, 5000 means LR will be decayed in the last 5000 iters
 NUM_PROJECTIONS=10000
 MODEL_SAVE_STEP=10000  # One ckpt is about ~200M, so don't save too many ckpts

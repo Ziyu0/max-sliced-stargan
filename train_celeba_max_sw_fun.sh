@@ -5,7 +5,7 @@
 
 
 DATASET="CelebA"
-IMAGE_SIZE=64
+IMAGE_SIZE=128
 N_CRITIC=5
 # N_CRITIC=1
 C_DIM=6
@@ -20,7 +20,7 @@ NUM_ITERS=100000
 NUM_ITERS_DECAY=0       # 0 means not decay, 5000 means LR will be decayed in the last 5000 iters
 MODEL_SAVE_STEP=10000   # One ckpt is about ~200M, so don't save too many ckpts
 
-D_CRITERION="BCE"
+D_CRITERION="WGAN-GP"
 # SORT_SCALAR="True"         # Pass scalar - out_src to max swd
 SORT_SCALAR="False"        # pass vector - h to max swd
 
