@@ -1,8 +1,11 @@
-import os
 import argparse
-from trainer import Trainer
-from data_loader import get_loader
+import os
+
+from click.decorators import password_option
 from torch.backends import cudnn
+
+from data_loader import get_loader
+from trainer import Trainer
 
 
 def str2bool(v):
@@ -35,16 +38,11 @@ def main(config):
     # Data loader.
     celeba_loader = None
     rafd_loader = None
+    assert config.dataset == 'CelebA', print("{} dataset is not supported".format(config.dataset))
 
-    if config.dataset in ['CelebA', 'Both']:
-        celeba_loader = get_loader(config.celeba_image_dir, config.attr_path, config.selected_attrs,
-                                   config.celeba_crop_size, config.image_size, config.batch_size,
-                                   'CelebA', config.mode, config.num_workers)
-    if config.dataset in ['RaFD', 'Both']:
-        rafd_loader = get_loader(config.rafd_image_dir, None, None,
-                                 config.rafd_crop_size, config.image_size, config.batch_size,
-                                 'RaFD', config.mode, config.num_workers)
-    
+    celeba_loader = get_loader(config.celeba_image_dir, config.attr_path, config.selected_attrs,
+                                config.celeba_crop_size, config.image_size, config.batch_size,
+                                'CelebA', config.mode, config.num_workers)
 
     # Trainer for training and testing StarGAN.
     trainer = Trainer(celeba_loader, rafd_loader, config)
@@ -53,15 +51,11 @@ def main(config):
     config.test_iters = min(config.test_iters, config.num_iters)
 
     if config.mode == 'train':
-        if config.dataset in ['CelebA', 'RaFD']:
-            trainer.train()
-        elif config.dataset in ['Both']:
-            trainer.train_multi()
+        trainer.train()
     elif config.mode == 'test':
-        if config.dataset in ['CelebA', 'RaFD']:
-            trainer.test()
-        elif config.dataset in ['Both']:
-            trainer.test_multi()
+        trainer.test()
+    else:
+        pass
 
 
 if __name__ == '__main__':
