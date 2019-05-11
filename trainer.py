@@ -47,7 +47,6 @@ class Trainer(object):
         self.resume_iters = config.resume_iters
         self.selected_attrs = config.selected_attrs
 
-        # TODO: add the configs here
         # Training configuration for sliced wasserstein loss.
         self.d_criterion = config.d_criterion
         self.use_sw_loss = config.use_sw_loss
@@ -98,14 +97,9 @@ class Trainer(object):
 
     def build_model(self):
         """Create a generator and a discriminator."""
-        if self.dataset in ['CelebA', 'RaFD']:
-            self.G = Generator(self.g_conv_dim, self.c_dim, self.g_repeat_num)
-            self.D = Discriminator(self.image_size, self.d_conv_dim, self.c_dim, self.d_repeat_num,
-                                   use_d_feature=self.actual_use_d_feature_flag) 
-        elif self.dataset in ['Both']:
-            self.G = Generator(self.g_conv_dim, self.c_dim+self.c2_dim+2, self.g_repeat_num)   # 2 for mask vector.
-            self.D = Discriminator(self.image_size, self.d_conv_dim, self.c_dim+self.c2_dim, self.d_repeat_num,
-                                   use_d_feature=self.actual_use_d_feature_flag)
+        self.G = Generator(self.g_conv_dim, self.c_dim, self.g_repeat_num)
+        self.D = Discriminator(self.image_size, self.d_conv_dim, self.c_dim, self.d_repeat_num,
+                                use_d_feature=self.actual_use_d_feature_flag)
 
         self.g_optimizer = torch.optim.Adam(self.G.parameters(), self.g_lr, [self.beta1, self.beta2])
         self.d_optimizer = torch.optim.Adam(self.D.parameters(), self.d_lr, [self.beta1, self.beta2])
@@ -319,6 +313,7 @@ class Trainer(object):
 
     def _train_D_wasserstein_GP(self, data):
         """[For original StarGAN objective or SWD and max-SWD] 
+        (Note: SWD - Sliced Wasserstein Distance, max-SWD: max Sliced Wasserstein Distance)
         Train discriminator using wasserstein distance with gradient penalty.
         
         Args:
