@@ -3,4 +3,4 @@ data
 remote
 stargan*
 *.ipynb
-!plots/stargan*
+plots
