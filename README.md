@@ -74,7 +74,7 @@ cd scripts
 bash test_celeba_general.sh 
 ```
 
-#### Testing on on a small subset of the images from the test dataset
+#### Testing on a small subset of the images from the test dataset
 ```
 cd scripts
 bash test_celeba_small.sh
@@ -99,3 +99,7 @@ The following figure is the facial attribute transfer results for the original S
 <p align="center">
 <img src=imgs/origin_and_max.png width=800>
 </p>
+
+## Future work
+- [ ] Provide supports for training on other datasets, such as the RaFD dataset.
+- [ ] Further improve the performance of the Max-Sliced StarGAN.
