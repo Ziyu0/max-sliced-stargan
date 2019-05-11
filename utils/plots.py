@@ -1,7 +1,6 @@
 """Tools to create plots.
 
 Created on April 20, 2019
-Updated on
 @author: Ziyu
 """
 import matplotlib
@@ -68,10 +67,6 @@ def plot_all_loss(log_step, all_loss, plot_dir, labels):
         # Clear the current figure
         plt.close()
 
-def plot_g_fake_loss():
-    """Plot only G/loss_fake for the loss of specified experiments."""
-    pass
-
 def main(args):
     # Get the experiments to be loaded
     exp_types = {
@@ -123,4 +118,3 @@ if __name__ == '__main__':
     print(args)
 
     main(args)
-    
