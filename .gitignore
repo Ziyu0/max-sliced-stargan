@@ -4,3 +4,4 @@ remote
 stargan*
 *.ipynb
 plots
+!scripts
