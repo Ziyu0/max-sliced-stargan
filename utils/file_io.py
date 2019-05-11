@@ -16,7 +16,7 @@ def load_single_loss_file(logdir):
     if not paths:
         return None
     
-    event_path = paths[0]
+    event_path = paths[1] if len(paths) > 1 else paths[0]
     loss = defaultdict(list)
     
     for e in tf.train.summary_iterator(event_path):
