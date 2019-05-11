@@ -1,5 +1,5 @@
 # Max-Sliced StarGAN
-This repository contains Pytorch implementation for the _Max-Sliced StarGAN_ proposed in project [Multi-Domain Image-to-Image Translation using StarGAN with Max Sliced Wasserstein Distance](report/Multi_Domain_Image_to_Image_Translation_using_StarGAN_with_Max_Sliced_Wasserstein_Distance.pdf).
+This repository contains Pytorch implementation for the _Max-Sliced StarGAN_ proposed in my project [Multi-Domain Image-to-Image Translation using StarGAN with Max Sliced Wasserstein Distance](report/Multi_Domain_Image_to_Image_Translation_using_StarGAN_with_Max_Sliced_Wasserstein_Distance.pdf).
 
 The Max-Sliced StarGAN combines [StarGAN](https://arxiv.org/abs/1711.09020) and [Max-Sliced Wasserstein distance](https://arxiv.org/abs/1904.05877) together to improve the training stability and reduce sample complexity of the orginal StarGAN.
 
