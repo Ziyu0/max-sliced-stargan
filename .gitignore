@@ -5,3 +5,4 @@ stargan*
 *.ipynb
 plots
 !scripts
+jpg
